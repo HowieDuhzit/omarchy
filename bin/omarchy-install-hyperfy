@@ -4,6 +4,7 @@ set -Eeuo pipefail
 # Constants
 APP_NAME="Hyperfy"
 APP_SLUG="hyperfy"
+ICON_GLYPH="⚡"
 DEFAULT_PORT="3000"
 CONTAINER_NAME_DEFAULT="hyperfy-web"
 
