@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+LIVEKIT_VERSION="1.9.2"
+SERVICE_NAME="livekit-dev.service"
+SERVICE_DIR="$HOME/.config/systemd/user"
+SERVICE_FILE="$SERVICE_DIR/$SERVICE_NAME"
+COMPOSE_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/omarchy/services/livekit"
+COMPOSE_FILE="$COMPOSE_ROOT/docker-compose.yml"
+DOCKER_COMPOSE=(docker compose)
+DOCKER_COMPOSE_DISPLAY="docker compose"
+
+need() { command -v "$1" >/dev/null 2>&1; }
+die() { echo "Error: $*" >&2; exit 1; }
+
+HAS_TTY=false
+if [ -t 0 ]; then HAS_TTY=true; fi
+
+use_gum() { $HAS_TTY && need gum; }
+
+header() {
+  local icon="$1"; shift
+  local text="$*"
+  if use_gum; then
+    gum style --border thick --margin "1" --padding "1 2" --border-foreground 212 "$icon  $text"
+  else
+    echo "==== $text ===="
+  fi
+}
+
+info() {
+  if use_gum; then
+    gum style --foreground 244 "$*"
+  else
+    echo "$*"
+  fi
+}
+
+prompt_input() {
+  local prompt="$1" default="$2" value=""
+  if use_gum; then
+    value=$(gum input --prompt "$prompt" --value "$default" 2>/dev/null || true)
+  fi
+  if [[ -z "$value" && $HAS_TTY == true ]]; then
+    read -rp "$prompt [$default]: " value || true
+  fi
+  if [[ -z "$value" ]]; then
+    value="$default"
+  fi
+  printf '%s' "$value"
+}
+
+prompt_yes_no() {
+  local prompt="$1" default="${2:-No}" answer=""
+  if use_gum; then
+    answer=$(gum choose --header "$prompt" "Yes" "No" 2>/dev/null || true)
+  fi
+  if [[ -z "$answer" && $HAS_TTY == true ]]; then
+    local suffix="[y/N]"
+    [[ "${default,,}" == "yes" ]] && suffix="[Y/n]"
+    read -rp "$prompt $suffix: " answer || true
+  fi
+  if [[ -z "$answer" ]]; then
+    answer="$default"
+  fi
+  case "${answer,,}" in
+    y|yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+prompt_choice() {
+  local prompt="$1" default="$2"
+  shift 2
+  local options=("$@")
+  local answer=""
+  if use_gum; then
+    answer=$(gum choose --header "$prompt" "${options[@]}" 2>/dev/null || true)
+  fi
+  if [[ -z "$answer" && $HAS_TTY == true ]]; then
+    echo "$prompt"
+    local i=1
+    for opt in "${options[@]}"; do
+      echo "  $i) $opt"
+      ((i++))
+    done
+    local choice=""
+    read -rp "Choice [$default]: " choice || true
+    if [[ "$choice" =~ ^[0-9]+$ && choice -ge 1 && choice -le ${#options[@]} ]]; then
+      answer="${options[choice-1]}"
+    fi
+  fi
+  if [[ -z "$answer" ]]; then
+    answer="$default"
+  fi
+  printf '%s\n' "$answer"
+}
+
+ensure_compose_cmd() {
+  if docker compose version &>/dev/null; then
+    DOCKER_COMPOSE=(docker compose)
+    DOCKER_COMPOSE_DISPLAY="docker compose"
+    return
+  fi
+  if command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE=(docker-compose)
+    DOCKER_COMPOSE_DISPLAY="docker-compose"
+    return
+  fi
+  die "docker compose not found. Install Docker Compose."
+}
+
+install_binary() {
+  header "🎙️" "Install LiveKit Server (binary)"
+
+  if ! need curl; then
+    info "Installing dependency: curl"
+    if need omarchy-pkg-add; then
+      omarchy-pkg-add curl
+    else
+      die "curl not found and omarchy-pkg-add missing"
+    fi
+  fi
+
+  info "Downloading LiveKit ${LIVEKIT_VERSION}..."
+  if ! curl -fsSL https://get.livekit.io | bash; then
+    die "LiveKit install script failed"
+  fi
+
+  local livekit_bin
+  livekit_bin="$(command -v livekit-server || true)"
+  if [[ -z "$livekit_bin" ]]; then
+    die "livekit-server not found in PATH after install"
+  fi
+  info "Installed: $livekit_bin"
+
+  local run_service=false bind_all=false
+  if prompt_yes_no "Create and start a user systemd service to run LiveKit in dev mode?" "Yes"; then
+    run_service=true
+  fi
+
+  if $run_service; then
+    if prompt_yes_no "Expose LiveKit on your LAN (bind 0.0.0.0)?" "No"; then
+      bind_all=true
+    fi
+
+    header "🎙️" "Configuring systemd --user service"
+    mkdir -p "$SERVICE_DIR"
+    local exec_start="$livekit_bin --dev"
+    if $bind_all; then
+      exec_start+=" --bind 0.0.0.0"
+    fi
+
+    cat > "$SERVICE_FILE" <<'__SERVICE__'
+[Unit]
+Description=LiveKit Server (dev mode)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=__EXEC_START__
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
+__SERVICE__
+
+    # Replace placeholder with actual command (sed portable)
+    sed -i "s#__EXEC_START__#${exec_start//\//\/}#" "$SERVICE_FILE"
+
+    systemctl --user daemon-reload
+    systemctl --user enable --now "$SERVICE_NAME" || die "Failed starting $SERVICE_NAME"
+    info "LiveKit is running in dev mode as a user service."
+  else
+    header "🎙️" "Manual run"
+    echo "Start in dev mode:"; echo "  $livekit_bin --dev"
+    echo
+    echo "To allow access from other devices on your LAN:"; echo "  $livekit_bin --dev --bind 0.0.0.0"
+  fi
+}
+
+install_docker() {
+  header "🎙️" "Install LiveKit Server (Docker Compose)"
+
+  need docker || die "docker is required"
+  docker info >/dev/null 2>&1 || die "Docker daemon not running. Start it and retry."
+  ensure_compose_cmd
+
+  mkdir -p "$COMPOSE_ROOT"
+
+  local default_image="livekit/livekit-server:v${LIVEKIT_VERSION}"
+  local image="${default_image}"
+  if ! prompt_yes_no "Pin Docker image to ${default_image}? (No selects alternative)" "Yes"; then
+    image=$(prompt_input "Docker image" "livekit/livekit-server:latest")
+  fi
+
+  local bind_all=true
+  if ! prompt_yes_no "Expose LiveKit on your LAN (0.0.0.0)?" "Yes"; then
+    bind_all=false
+  fi
+
+  local host_prefix=""
+  if ! $bind_all; then
+    host_prefix="127.0.0.1:"
+  fi
+
+  cat > "$COMPOSE_FILE" <<__COMPOSE__
+name: omarchy-livekit
+services:
+  livekit:
+    image: ${image}
+    command: ["--dev"]
+    restart: unless-stopped
+    ports:
+      - "${host_prefix}7880:7880"
+      - "${host_prefix}7881:7881"
+      - "${host_prefix}7882-7999:7882-7999/udp"
+__COMPOSE__
+
+  header "🎙️" "Starting Docker stack"
+  (cd "$COMPOSE_ROOT" && "${DOCKER_COMPOSE[@]}" -f "$COMPOSE_FILE" up -d)
+
+  info "Docker compose file: $COMPOSE_FILE"
+  info "Manage with: ${DOCKER_COMPOSE_DISPLAY} -f $COMPOSE_FILE ps"
+}
+
+header "🎙️" "Install LiveKit"
+
+install_mode=$(prompt_choice "Choose installation method" "Binary (systemd)" "Binary (systemd)" "Docker Compose")
+
+case "$install_mode" in
+  "Binary (systemd)") install_binary ;;
+  "Docker Compose") install_docker ;;
+  *) install_binary ;;
+ esac
+
+echo
+header "🎙️" "Next steps"
+cat <<__NEXT__
+- Default dev credentials: API key 'devkey', API secret 'secret'
+- Signal server listens on 127.0.0.1:7880 by default (or 0.0.0.0 if chosen)
+- Test connectivity:  curl -sSf http://127.0.0.1:7880/rtc || true
+- Systemd control: systemctl --user start|stop|status $SERVICE_NAME (binary install)
+- Docker control: ${DOCKER_COMPOSE_DISPLAY} -f $COMPOSE_FILE up|down (docker install)
+
+Docs: https://docs.livekit.io/home/self-hosting/local/
+__NEXT__

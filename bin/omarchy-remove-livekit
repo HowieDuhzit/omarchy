@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SERVICE_NAME="livekit-dev.service"
+SERVICE_DIR="$HOME/.config/systemd/user"
+SERVICE_FILE="$SERVICE_DIR/${SERVICE_NAME}"
+COMPOSE_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/omarchy/services/livekit"
+COMPOSE_FILE="$COMPOSE_ROOT/docker-compose.yml"
+DOCKER_COMPOSE=(docker compose)
+DOCKER_COMPOSE_DISPLAY="docker compose"
+
+ensure_compose_cmd() {
+  if docker compose version &>/dev/null; then
+    DOCKER_COMPOSE=(docker compose)
+    DOCKER_COMPOSE_DISPLAY="docker compose"
+    return 0
+  fi
+  if command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE=(docker-compose)
+    DOCKER_COMPOSE_DISPLAY="docker-compose"
+    return 0
+  fi
+  return 1
+}
+
+need() { command -v "$1" >/dev/null 2>&1; }
+
+header() {
+  if need gum; then
+    gum style --border thick --margin "1" --padding "1 2" --border-foreground 203 "🗑️  $*"
+  else
+    echo "==== $* ===="
+  fi
+}
+
+info() {
+  if need gum; then
+    gum style --foreground 244 "$*"
+  else
+    echo "$*"
+  fi
+}
+
+header "Remove LiveKit Server"
+
+# Stop and disable user service if present
+if systemctl --user list-unit-files "$SERVICE_NAME" &>/dev/null; then
+  info "Stopping LiveKit user service…"
+  systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
+  systemctl --user disable "$SERVICE_NAME" 2>/dev/null || true
+fi
+
+if [[ -f "$SERVICE_FILE" ]]; then
+  info "Removing user service definition $SERVICE_FILE"
+  rm -f "$SERVICE_FILE"
+  systemctl --user daemon-reload || true
+fi
+
+# Tear down docker compose deployment if present
+if [[ -f "$COMPOSE_FILE" ]]; then
+  if ensure_compose_cmd && need docker; then
+    info "Shutting down Docker stack…"
+    (cd "$COMPOSE_ROOT" && "${DOCKER_COMPOSE[@]}" -f "$COMPOSE_FILE" down --remove-orphans) || true
+    docker volume rm omarchy-livekit_livekit-data &>/dev/null || true
+  else
+    info "Docker not available, skipping compose shutdown"
+  fi
+fi
+
+if [[ -d "$COMPOSE_ROOT" ]]; then
+  info "Removing compose config directory $COMPOSE_ROOT"
+  rm -rf "$COMPOSE_ROOT"
+fi
+
+# Remove installed binary if it matches the default location
+LIVEKIT_BIN="$(command -v livekit-server || true)"
+if [[ -n "$LIVEKIT_BIN" ]]; then
+  info "Removing binary at $LIVEKIT_BIN (sudo may prompt)…"
+  sudo rm -f "$LIVEKIT_BIN"
+else
+  info "livekit-server binary not found in PATH (already removed?)"
+fi
+
+header "Cleanup complete"
+cat <<EON
+- Service removed from menu
+- Binary deleted (if present); rerun Install → Service → LiveKit Server to reinstall
+- Docker stack removed (if used); compose directory cleaned up
+- Verify no process remains: pgrep -fl livekit || true
+EON
+
+exit 0
