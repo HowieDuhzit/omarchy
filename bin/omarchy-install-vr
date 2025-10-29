@@ -1,15 +1,16 @@
 #!/bin/bash
 # Install VR packages and build wlx-overlay-s
 
-# Install VR packages
+# Install VR packages (pure WiVRn setup)
 sudo pacman -S --needed --noconfirm \
   openxr openvr wivrn-server wivrn-dashboard \
   monado-vulkan-layers-git xrizer xrizer-common \
   rust cargo cmake pkgconf libxkbcommon wayland \
-  vulkan-headers dbus fontconfig freetype2 cage
+  vulkan-headers dbus fontconfig freetype2 cage \
+  firefox nautilus typora spotify obsidian
 
-# Install AUR packages
-yay -S --needed --noconfirm alvr-bin
+# Install optional AUR packages
+yay -S --needed --noconfirm opencomposite steam steamvr slimevr-server
 
 # Build wlx-overlay-s
 mkdir -p ~/builds
@@ -21,10 +22,155 @@ cd wlx-overlay-s
 cargo build --release
 sudo install -m755 target/release/wlx-overlay-s /usr/local/bin/
 
+# Create OpenVR library symlink (required by wlx-overlay-s)
+# Check for OpenVR library in common locations
+OPENVR_LIB_FOUND=false
+
+# Check if openvr package provides the library
+if [[ -f "/usr/lib/libopenvr_api.so" ]]; then
+  echo "OpenVR library found at /usr/lib/libopenvr_api.so"
+  OPENVR_LIB_FOUND=true
+elif [[ -f "/usr/lib64/libopenvr_api.so" ]]; then
+  echo "OpenVR library found at /usr/lib64/libopenvr_api.so"
+  OPENVR_LIB_FOUND=true
+elif [[ -f "/usr/lib/x86_64-linux-gnu/libopenvr_api.so" ]]; then
+  echo "OpenVR library found at /usr/lib/x86_64-linux-gnu/libopenvr_api.so"
+  sudo ln -sf /usr/lib/x86_64-linux-gnu/libopenvr_api.so /usr/lib/libopenvr_api.so
+  OPENVR_LIB_FOUND=true
+fi
+
+if [[ "$OPENVR_LIB_FOUND" == "false" ]]; then
+  echo "Warning: OpenVR library not found. wlx-overlay-s may not work properly."
+  echo "You may need to install additional OpenVR packages or build from source."
+fi
+
 # Create VR config directories
 mkdir -p ~/.config/wivrn ~/.config/wlxoverlay
 
-# Install WiVRn config
+# Install VR keyboard template
+cat > ~/.config/wlxoverlay/keyboard.yaml << 'EOF'
+--- # WiVRn VR Keyboard Configuration
+# This file contains all data needed to generate the VR keyboard.
+# You can create any layout, as long as:
+# - All keys are rectangular with 1 unit of height.
+# This means:
+# - We're limited to the flat & boring ANSI enter key.
+# - Numpad + and Enter might not look so great.
+
+# *** Important ***
+# The keyboard layout uses virtual key codes, so they are layout-independent.
+# For example, Q on a French layout actually results in A.
+# If you're using a non-english layout, chances are you only need to edit the label section below.
+
+# Not used for anything right now
+name: "en-us_full"
+
+# How many units of key size in each row? 1 = standard letter key size
+row_size: 23
+
+# Specifies the size of each key. The sum of any given row must equal RowSize
+key_sizes:
+  - [1.5,0.5, 1, 1, 1, 1,0.5,1, 1, 1, 1,0.5,1, 1, 1, 1, 0.5, 1, 1, 1, 0.5, 1, 1, 1, 1]
+  - [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0.5, 1, 1, 1, 0.5, 1, 1, 1, 1]
+  - [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 1, 1, 1, 0.5, 1, 1, 1, 1]
+  - [1.75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.25, 4, 1, 1, 1, 1]
+  - [1.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.75, 1.5, 1, 1.5, 1, 1, 1, 1]
+  - [1.25, 1.25, 1.25, 6.25, 1.25, 1.25, 1.25, 1.25, 0.5, 1, 1, 1, 0.5, 2, 1, 1]
+
+# The main (blue) layout of the keyboard.
+# Accepted are:
+# - virtual keys. For a full list, look at enum VirtualKey in https://github.com/galister/wlx-overlay-s/blob/main/src/hid.rs
+# - exec_commands (defined below)
+# - macros (defined below)
+# - ~ (null) will leave an empty space with the corresponding size from key_sizes
+main_layout:
+  - ["Escape", ~, "F1", "F2", "F3", "F4", ~, "F5", "F6", "F7", "F8", ~, "F9", "F10", "F11", "F12", ~, "Print", "Scroll", "Pause", ~, "COPY", "PASTE", ~, "KILL"]
+  - ["Oem3", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N0", "Minus", "Plus", "BackSpace", ~, "Insert", "Home", "Prior", ~, "NumLock", "KP_Divide", "KP_Multiply", "KP_Subtract"]
+  - ["Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "Oem4", "Oem6", "Oem5", ~, "Delete", "End", "Next", ~, "KP_7", "KP_8", "KP_9", "KP_Add"]
+  - ["XF86Favorites", "A", "S", "D", "F", "G", "H", "J", "K", "L", "Oem1", "Oem7", "Return", ~, "KP_4", "KP_5", "KP_6", ~]
+  - ["LShift", "Oem102", "Z", "X", "C", "V", "B", "N", "M", "Comma", "Period", "Oem2", "RShift", ~, "Up", ~, "KP_1", "KP_2", "KP_3", "KP_Enter"]
+  - ["LCtrl", "LSuper", "LAlt", "Space", "Meta", "RSuper", "Menu", "RCtrl", ~, "Left", "Down", "Right", ~, "KP_0", "KP_Decimal", ~]
+
+# When using the purple pointer...
+# None - No special functionality when using purple pointer (Default)
+# Shift - Use same functionality as the orange pointer
+# Ctrl - Use Main layout with Ctrl modifier
+# Alt - Use Main layout with Alt modifier
+# Super - Use Main layout with Super (WinKey) modifier
+# Meta - Use Main layout with Meta (AltGr) modifier
+alt_modifier: None
+
+# Shell commands to be used in a layout.
+# Value is an array of string arguments.
+exec_commands:
+  STT: [ "whisper_stt", "--lang", "en" ]
+
+# Series of keypresses to be used in a layout.
+# Format: keyName [DOWN|UP]
+# keyName must be a valid virtual key from the VirtualKey enum (see above)
+# DOWN|UP: can be omitted for an implicit "keyName DOWN, keyName UP"
+macros:
+  KILL: [ "LSuper DOWN", "LCtrl DOWN", "Escape", "LCtrl UP", "LSuper UP" ]
+  COPY: [ "LCtrl DOWN", "C", "LCtrl UP" ]
+  PASTE: [ "LCtrl DOWN", "V", "LCtrl UP" ]
+
+# Custom labels to use.
+# Key: element of main_layout
+# Value: Array of strings. 0th element is the upper row, 1st element is lower row.
+# For empty labels, use [] (do not use ~)
+labels:
+  "Escape": ["Esc"]
+  "Prior": ["PgUp"]
+  "Next": ["PgDn"]
+  "NumLock": ["Num"]
+  "Space": []
+  "LAlt": ["Alt"]
+  "LCtrl": ["Ctrl"]
+  "RCtrl": ["Ctrl"]
+  "LSuper": ["Super"]
+  "RSuper": ["Super"]
+  "LShift": ["Shift"]
+  "RShift": ["Shift"]
+  "Insert": ["Ins"]
+  "Delete": ["Del"]
+  "BackSpace": ["<<"]
+  "KP_Divide": [" /"]
+  "KP_Add": [" +"]
+  "KP_Multiply": [" *"]
+  "KP_Decimal": [" ."]
+  "KP_Subtract": [" -"]
+  "KP_Enter": ["Ent"]
+  "Print": ["Prn"]
+  "Scroll": ["Scr"]
+  "Pause": ["Brk"]
+  "XF86Favorites": ["Menu"]
+
+# fallback labels below
+"N1": ["1", "!"]
+"N2": ["2", "@"]
+"N3": ["3", "#"]
+"N4": ["4", "$"]
+"N5": ["5", "%"]
+"N6": ["6", "^"]
+"N7": ["7", "&"]
+"N8": ["8", "*"]
+"N9": ["9", "("]
+"N0": ["0", ")"]
+"Minus": ["-", "_"]
+"Plus": ["=", "+"]
+"Comma": [",", "<"]
+"Period": [".", ">"]
+"Oem1": [";", ":"]
+"Oem2": ["/", "?"]
+"Oem3": ["`", "~"]
+"Oem4": ["[", "{"]
+"Oem5": ["\\", "|"]
+"Oem6": ["]", "}"]
+"Oem7": ["'", "\""]
+"Oem102": ["\\", "|"]
+EOF
+
+# Install WiVRn config with hand tracking enabled
 cat > ~/.config/wivrn/config.json << 'EOF'
 {
   "application": ["/usr/local/bin/wlx-overlay-s"],
@@ -32,7 +178,11 @@ cat > ~/.config/wivrn/config.json << 'EOF'
   "debug-gui": false,
   "encoders.disabled": [{"height": 1.0, "offset_x": 0.0, "offset_y": 0.0, "width": 1.0}],
   "openvr-compat-path": "/opt/xrizer",
-  "use-steamvr-lh": false
+  "use-steamvr-lh": false,
+  "hand-tracking": true,
+  "hand-tracking-frequency": 60,
+  "passthrough": true,
+  "passthrough-key": "F1"
 }
 EOF
 
@@ -53,64 +203,93 @@ else
   BLIT_METHOD="software"
 fi
 
-# Install WayVR config
+# Install clean WayVR config
 cat > ~/.config/wlxoverlay/wayvr.yaml << EOF
 version: 1
+
+# Rendering method
 blit_method: "$BLIT_METHOD"
+
 run_compositor_at_start: false
 auto_hide: true
 auto_hide_delay: 750
 keyboard_repeat_delay: 200
 keyboard_repeat_rate: 50
 
+# Dashboard (optional)
 dashboard:
   exec: "wayvr-dashboard"
   args: ""
   env: []
 
+# Display configuration - Optimized for VR comfort
 displays:
+  # Small utility display on right hand
   watch:
     width: 400
-    height: 600
-    scale: 1.0
+    height: 500
+    scale: 1.2
     attach_to: "HandRight"
-    pos: [0.0, 0.0, 0.125]
-    rotation: {axis: [1.0, 0.0, 0.0], angle: -45.0}
-  disp1:
-    width: 1280
-    height: 720
-    scale: 1.0
+    pos: [0.0, 0.0, 0.15]
+    rotation: {axis: [1.0, 0.0, 0.0], angle: -30.0}
+  
+  # Main workspace display
+  main:
+    width: 1600
+    height: 900
+    scale: 1.1
     primary: true
-  disp2:
+  
+  # Secondary display for media/browsing
+  secondary:
     width: 1920
     height: 1080
     scale: 1.0
 
+# Application catalog - Clean, minimal VR setup
 catalogs:
   default_catalog:
     apps:
+      # Essential system tools
       - name: "Terminal"
-        target_display: "disp1"
+        target_display: "main"
         exec: "alacritty"
         env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
         shown_at_start: false
-      - name: "htop"
+
+      - name: "System Monitor"
         target_display: "watch"
         exec: "alacritty"
-        args: "-e htop"
+        args: "-e btop"
         env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
-      - name: "Firefox"
-        target_display: "disp2"
+
+      # Core productivity apps (VR-friendly)
+      - name: "Browser"
+        target_display: "secondary"
         exec: "firefox"
         args: "--new-window"
         env: ["MOZ_ENABLE_WAYLAND=1", "DISPLAY="]
+
       - name: "File Manager"
-        target_display: "disp1"
-        exec: "thunar"
+        target_display: "main"
+        exec: "nautilus"
         env: ["DISPLAY="]
-      - name: "VS Code"
-        target_display: "disp2"
-        exec: "code"
+
+      - name: "Text Editor"
+        target_display: "main"
+        exec: "typora"
+        env: ["DISPLAY="]
+
+      # Media and communication
+      - name: "Music"
+        target_display: "secondary"
+        exec: "spotify"
+        args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
+        env: ["DISPLAY="]
+
+      - name: "Notes"
+        target_display: "main"
+        exec: "obsidian"
         args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
         env: ["DISPLAY="]
 EOF

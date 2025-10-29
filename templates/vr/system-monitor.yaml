@@ -1,0 +1,130 @@
+# Omarchy System Monitor
+# Real-time system monitoring panel for VR
+
+size: [600, 400]
+width: 0.3
+
+elements:
+  # Background panel
+  - type: Panel
+    rect: [0, 0, 600, 400]
+    corner_radius: 8
+    bg_color: "#1a1a1a"
+
+  # Header
+  - type: Label
+    rect: [20, 20, 560, 30]
+    font_size: 18
+    fg_color: "#00ff88"
+    source: Static
+    text: "System Monitor"
+
+  # CPU usage
+  - type: Label
+    rect: [20, 60, 100, 20]
+    font_size: 12
+    fg_color: "#ffffff"
+    source: Static
+    text: "CPU Usage:"
+
+  - type: Label
+    rect: [130, 60, 100, 20]
+    font_size: 12
+    fg_color: "#ffff00"
+    source: Exec
+    command: ["bash", "-c", "top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | sed 's/%us,//'"]
+    interval: 2
+
+  # Memory usage
+  - type: Label
+    rect: [20, 90, 100, 20]
+    font_size: 12
+    fg_color: "#ffffff"
+    source: Static
+    text: "Memory:"
+
+  - type: Label
+    rect: [130, 90, 200, 20]
+    font_size: 12
+    fg_color: "#00ffff"
+    source: Exec
+    command: ["bash", "-c", "free -h | awk '/^Mem:/ {print $3 \"/\" $2 \" (\" int($3/$2*100) \"%)\"}'"]
+    interval: 3
+
+  # Disk usage
+  - type: Label
+    rect: [20, 120, 100, 20]
+    font_size: 12
+    fg_color: "#ffffff"
+    source: Static
+    text: "Disk Usage:"
+
+  - type: Label
+    rect: [130, 120, 200, 20]
+    font_size: 12
+    fg_color: "#ff8800"
+    source: Exec
+    command: ["bash", "-c", "df -h / | awk 'NR==2 {print $3 \"/\" $2 \" (\" $5 \")\"}'"]
+    interval: 10
+
+  # Network
+  - type: Label
+    rect: [20, 150, 100, 20]
+    font_size: 12
+    fg_color: "#ffffff"
+    source: Static
+    text: "Network:"
+
+  - type: Label
+    rect: [130, 150, 200, 20]
+    font_size: 12
+    fg_color: "#88ff00"
+    source: Exec
+    command: ["bash", "-c", "ip route | grep default | awk '{print $5}' | head -1"]
+    interval: 5
+
+  # Temperature (if available)
+  - type: Label
+    rect: [20, 180, 100, 20]
+    font_size: 12
+    fg_color: "#ffffff"
+    source: Static
+    text: "Temperature:"
+
+  - type: Label
+    rect: [130, 180, 100, 20]
+    font_size: 12
+    fg_color: "#ff0088"
+    source: Exec
+    command: ["bash", "-c", "sensors 2>/dev/null | grep 'Core 0' | awk '{print $3}' || echo 'N/A'"]
+    interval: 5
+
+  # Process list
+  - type: Label
+    rect: [20, 220, 560, 20]
+    font_size: 12
+    fg_color: "#ffffff"
+    source: Static
+    text: "Top Processes:"
+
+  - type: Label
+    rect: [20, 240, 560, 120]
+    font_size: 10
+    fg_color: "#cccccc"
+    source: Exec
+    command: ["bash", "-c", "ps aux --sort=-%cpu | head -6 | awk '{print $11 \" \" $3 \"%\"}' | tail -5"]
+    interval: 3
+
+  # Close button
+  - type: Button
+    rect: [520, 20, 60, 30]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#ff4444"
+    text: "Close"
+    click_down:
+      - type: Window
+        target: system_monitor
+        action: Destroy
+

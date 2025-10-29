@@ -1,4 +1,4 @@
-# VR packages for Omarchy
+# VR packages for Omarchy - Pure WiVRn setup
 # Core VR stack packages
 
 # OpenXR and OpenVR support
@@ -28,19 +28,17 @@ dbus
 fontconfig
 freetype2
 
-# Optional VR tools
+# Essential VR tools
 cage
-alvr-bin
 
 # Desktop apps that work well in VR
 firefox
-thunar
-gedit
-discord
-visual-studio-code-bin
+nautilus
+typora
+spotify
+obsidian
 
-# Additional VR software from LVRA
-envision
+# Additional VR software (optional)
 opencomposite
 steam
 steamvr

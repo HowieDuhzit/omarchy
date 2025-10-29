@@ -1,0 +1,143 @@
+#!/bin/bash
+# VR UI Customization Helper
+
+echo "VR UI Customization Helper"
+echo "=========================="
+echo ""
+
+# Check if VR UI configs exist
+VR_CONFIG_DIR="$HOME/.config/wlxoverlay"
+
+if [[ ! -d "$VR_CONFIG_DIR" ]]; then
+    echo "VR config directory not found at $VR_CONFIG_DIR"
+    echo "Please run 'omarchy-install-vr' first to set up VR support."
+    exit 1
+fi
+
+echo "Available VR UI panels:"
+echo "======================="
+echo ""
+
+# List available UI panels
+for ui_file in omarchy-control.yaml system-monitor.yaml vr-menu.yaml; do
+    if [[ -f "$VR_CONFIG_DIR/$ui_file" ]]; then
+        echo "✓ $ui_file"
+    else
+        echo "✗ $ui_file (not found)"
+    fi
+done
+
+echo ""
+echo "VR UI Customization Options:"
+echo "============================"
+echo ""
+echo "1. Edit Omarchy Control Panel"
+echo "2. Edit System Monitor Panel"
+echo "3. Edit VR Menu Panel"
+echo "4. View UI panel documentation"
+echo "5. Reset all UI panels to default"
+echo "6. Open VR config directory"
+echo ""
+
+read -p "Choose an option (1-6): " choice
+
+case $choice in
+    1)
+        ui_file="omarchy-control.yaml"
+        ;;
+    2)
+        ui_file="system-monitor.yaml"
+        ;;
+    3)
+        ui_file="vr-menu.yaml"
+        ;;
+    4)
+        echo ""
+        echo "VR UI Panel Documentation:"
+        echo "========================="
+        echo ""
+        echo "Based on wlx-overlay-s UI system:"
+        echo "https://github.com/galister/wlx-overlay-s/wiki/Customize-UI"
+        echo ""
+        echo "Element Types Available:"
+        echo "- Panel: Colored rectangles with rounded corners"
+        echo "- Label: Text display (static, clock, exec, etc.)"
+        echo "- Button: Interactive buttons with actions"
+        echo "- Sprite: Image display from DDS textures"
+        echo ""
+        echo "Button Actions:"
+        echo "- Exec: Run shell commands"
+        echo "- VirtualKey: Send keyboard events"
+        echo "- Toast: Show notification messages"
+        echo "- Window: Show/hide other UI panels"
+        echo "- SendOscValue: Send OSC data to VRChat"
+        echo ""
+        echo "Performance Tips:"
+        echo "- Use small render resolutions for better performance"
+        echo "- Limit font sizes to 2-3 different sizes"
+        echo "- Create fewer, larger panels instead of many small ones"
+        echo ""
+        echo "For more details, visit the wlx-overlay-s wiki."
+        exit 0
+        ;;
+    5)
+        echo ""
+        read -p "Reset all UI panels to default? This will overwrite your current configs (y/N): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            cp ~/.local/share/omarchy/templates/vr/omarchy-control.yaml "$VR_CONFIG_DIR/"
+            cp ~/.local/share/omarchy/templates/vr/system-monitor.yaml "$VR_CONFIG_DIR/"
+            cp ~/.local/share/omarchy/templates/vr/vr-menu.yaml "$VR_CONFIG_DIR/"
+            echo "✓ All UI panels reset to default templates"
+        else
+            echo "Reset cancelled"
+        fi
+        exit 0
+        ;;
+    6)
+        echo ""
+        echo "Opening VR config directory..."
+        if command -v code >/dev/null 2>&1; then
+            code "$VR_CONFIG_DIR"
+        elif command -v nvim >/dev/null 2>&1; then
+            nvim "$VR_CONFIG_DIR"
+        elif command -v vim >/dev/null 2>&1; then
+            vim "$VR_CONFIG_DIR"
+        else
+            xdg-open "$VR_CONFIG_DIR"
+        fi
+        exit 0
+        ;;
+    *)
+        echo "Invalid option. Please choose 1-6."
+        exit 1
+        ;;
+esac
+
+if [[ -n "$ui_file" ]]; then
+    ui_path="$VR_CONFIG_DIR/$ui_file"
+    
+    if [[ ! -f "$ui_path" ]]; then
+        echo "UI panel $ui_file not found. Creating from template..."
+        cp ~/.local/share/omarchy/templates/vr/$ui_file "$ui_path"
+    fi
+    
+    echo ""
+    echo "Opening $ui_file for editing..."
+    if command -v code >/dev/null 2>&1; then
+        code "$ui_path"
+    elif command -v nvim >/dev/null 2>&1; then
+        nvim "$ui_path"
+    elif command -v vim >/dev/null 2>&1; then
+        vim "$ui_path"
+    else
+        nano "$ui_path"
+    fi
+    
+    echo ""
+    echo "After making changes:"
+    echo "1. Restart wlx-overlay-s or your VR session"
+    echo "2. Test the UI panel in VR"
+    echo "3. Adjust as needed"
+fi
+
+

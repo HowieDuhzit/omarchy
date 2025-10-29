@@ -17,65 +17,73 @@ dashboard:
   args: ""
   env: []
 
-# Display configuration
+# Display configuration - Optimized for VR comfort
 displays:
+  # Small utility display on right hand
   watch:
     width: 400
-    height: 600
-    scale: 1.0
+    height: 500
+    scale: 1.2
     attach_to: "HandRight"
-    pos: [0.0, 0.0, 0.125]
-    rotation: {axis: [1.0, 0.0, 0.0], angle: -45.0}
-  disp1:
-    width: 1280
-    height: 720
-    scale: 1.0
+    pos: [0.0, 0.0, 0.15]
+    rotation: {axis: [1.0, 0.0, 0.0], angle: -30.0}
+  
+  # Main workspace display
+  main:
+    width: 1600
+    height: 900
+    scale: 1.1
     primary: true
-  disp2:
+  
+  # Secondary display for media/browsing
+  secondary:
     width: 1920
     height: 1080
     scale: 1.0
 
-# Application catalog
+# Application catalog - Clean, minimal VR setup
 catalogs:
   default_catalog:
     apps:
+      # Essential system tools
       - name: "Terminal"
-        target_display: "disp1"
+        target_display: "main"
         exec: "alacritty"
         env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
         shown_at_start: false
 
-      - name: "htop"
+      - name: "System Monitor"
         target_display: "watch"
         exec: "alacritty"
-        args: "-e htop"
+        args: "-e btop"
         env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
 
-      - name: "Firefox"
-        target_display: "disp2"
+      # Core productivity apps (VR-friendly)
+      - name: "Browser"
+        target_display: "secondary"
         exec: "firefox"
         args: "--new-window"
         env: ["MOZ_ENABLE_WAYLAND=1", "DISPLAY="]
 
       - name: "File Manager"
-        target_display: "disp1"
-        exec: "thunar"
+        target_display: "main"
+        exec: "nautilus"
         env: ["DISPLAY="]
 
       - name: "Text Editor"
-        target_display: "disp1"
-        exec: "gedit"
+        target_display: "main"
+        exec: "typora"
         env: ["DISPLAY="]
 
-      - name: "VS Code"
-        target_display: "disp2"
-        exec: "code"
+      # Media and communication
+      - name: "Music"
+        target_display: "secondary"
+        exec: "spotify"
         args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
         env: ["DISPLAY="]
 
-      - name: "Discord"
-        target_display: "disp2"
-        exec: "discord"
+      - name: "Notes"
+        target_display: "main"
+        exec: "obsidian"
         args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
         env: ["DISPLAY="]

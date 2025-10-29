@@ -13,5 +13,9 @@
     }
   ],
   "openvr-compat-path": "/opt/xrizer",
-  "use-steamvr-lh": false
+  "use-steamvr-lh": false,
+  "hand-tracking": true,
+  "hand-tracking-frequency": 60,
+  "passthrough": false,
+  "passthrough-key": "F1"
 }

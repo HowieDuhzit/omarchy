@@ -1,6 +1,16 @@
 # VR Support in Omarchy
 
-Omarchy includes VR support using WiVRn and WayVR for wireless VR desktop functionality.
+Omarchy includes **pure WiVRn** VR support for wireless VR desktop functionality and gaming.
+
+## Features
+
+- **Pure WiVRn Setup**: No ALVR or other streaming solutions - just WiVRn
+- **Hand Tracking**: Full hand tracking support in VR desktop overlay
+- **Theme Integration**: VR configurations that match your selected Omarchy theme
+- **GPU Optimization**: Automatic detection and configuration for NVIDIA and AMD GPUs
+- **Hardware Detection**: `omarchy-vr-detect` helps identify your VR hardware
+- **Game Compatibility**: `omarchy-vr-compatibility` provides insights into VR game support
+- **Performance Tweaks**: Automatic system optimizations for smooth VR experience
 
 ## Quick Start
 
@@ -45,6 +55,49 @@ Located at `~/.config/wlxoverlay/wayvr.yaml`:
 - **displays**: Virtual display configurations
 - **catalogs**: Application launcher catalog
 
+### VR Keyboard Configuration
+
+Located at `~/.config/wlxoverlay/keyboard.yaml`:
+
+- **Custom Layouts**: Modify key sizes, positions, and arrangements
+- **Virtual Key Codes**: Layout-independent key mapping
+- **Macros**: Define custom key combinations (e.g., Ctrl+C, Ctrl+V)
+- **Exec Commands**: Run shell commands from keyboard keys
+- **Custom Labels**: Override key labels for different languages/layouts
+
+**Example Customizations:**
+- Add custom macros for common tasks
+- Modify key sizes for better VR ergonomics
+- Add exec commands for quick app launches
+- Customize labels for non-English layouts
+
+### VR UI Panels
+
+Omarchy includes custom VR UI panels for enhanced VR experience:
+
+**Omarchy Control Panel** (`omarchy-control.yaml`):
+- System status monitoring (CPU, memory, uptime, theme)
+- Quick actions (theme switching, terminal, file manager)
+- Volume and brightness controls
+- VR-specific tools (screenshot, recording)
+- Real-time system information
+
+**System Monitor** (`system-monitor.yaml`):
+- Real-time CPU, memory, and disk usage
+- Network information
+- Temperature monitoring
+- Top processes list
+- Live system statistics
+
+**VR Menu** (`vr-menu.yaml`):
+- Quick application launchers
+- Media applications (Spotify, Obsidian)
+- System tools access
+- Quick actions (screenshot, lock, restart, shutdown)
+- Centralized VR navigation
+
+These panels are automatically themed and can be launched from the WayVR application catalog.
+
 ### Theme Integration
 
 VR configurations automatically match your selected Omarchy theme through the theme system.
@@ -72,6 +125,8 @@ blit_method: "software"
 1. **Apps render incorrectly**: Switch rendering mode in wayvr.yaml
 2. **No overlay appears**: Check wlx-overlay-s path in WiVRn config
 3. **High latency**: Reduce bitrate in WiVRn config
+4. **Hand tracking not working in desktop**: Run `omarchy-vr-fix-hand-tracking`
+5. **Missing OpenVR library**: Run `omarchy-vr-fix-openvr`
 
 ### Performance Tuning
 
@@ -111,9 +166,8 @@ alias vr-app='DISPLAY= WAYLAND_DISPLAY=$WAYVR_DISPLAY'
 - **Linux VR Discord**: Join thousands of Linux VR enthusiasts
 
 ### Additional VR Software
-- **Envision**: WMR controller tracking for Arch Linux
 - **OpenComposite**: Drop-in SteamVR replacement for better performance
-- **ALVR**: Alternative wireless VR streaming solution
+- **SteamVR**: For Steam VR games
 - **SlimeVR**: Full-body tracking without base stations
 
 ### Hardware Detection

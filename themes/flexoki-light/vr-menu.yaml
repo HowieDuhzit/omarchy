@@ -1,0 +1,256 @@
+# Omarchy VR Menu
+# Quick access menu for VR applications and tools
+
+size: [500, 400]
+width: 0.25
+
+elements:
+  # Background panel
+  - type: Panel
+    rect: [0, 0, 500, 400]
+    corner_radius: 8
+    bg_color: "#1a1a1a"
+
+  # Header
+  - type: Label
+    rect: [20, 20, 460, 30]
+    font_size: 18
+    fg_color: "#00ff88"
+    source: Static
+    text: "VR Menu"
+
+  # Application launchers
+  - type: Label
+    rect: [20, 60, 460, 20]
+    font_size: 14
+    fg_color: "#ffffff"
+    source: Static
+    text: "Applications"
+
+  # Browser
+  - type: Button
+    rect: [20, 90, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Browser"
+    click_down:
+      - type: Exec
+        command: ["firefox", "--new-window"]
+
+  # Terminal
+  - type: Button
+    rect: [130, 90, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Terminal"
+    click_down:
+      - type: Exec
+        command: ["alacritty"]
+
+  # File Manager
+  - type: Button
+    rect: [240, 90, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Files"
+    click_down:
+      - type: Exec
+        command: ["nautilus"]
+
+  # Text Editor
+  - type: Button
+    rect: [350, 90, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Editor"
+    click_down:
+      - type: Exec
+      - type: Exec
+        command: ["typora"]
+
+  # Media section
+  - type: Label
+    rect: [20, 140, 460, 20]
+    font_size: 14
+    fg_color: "#ffffff"
+    source: Static
+    text: "Media"
+
+  # Music
+  - type: Button
+    rect: [20, 170, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Spotify"
+    click_down:
+      - type: Exec
+        command: ["spotify"]
+
+  # Notes
+  - type: Button
+    rect: [130, 170, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Obsidian"
+    click_down:
+      - type: Exec
+        command: ["obsidian"]
+
+  # Walker
+  - type: Button
+    rect: [240, 170, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Walker"
+    click_down:
+      - type: Exec
+        command: ["walker"]
+
+  # System tools section
+  - type: Label
+    rect: [20, 220, 460, 20]
+    font_size: 14
+    fg_color: "#ffffff"
+    source: Static
+    text: "System Tools"
+
+  # System Monitor
+  - type: Button
+    rect: [20, 250, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Monitor"
+    click_down:
+      - type: Window
+        target: system_monitor
+        action: ShowUi
+
+  # Theme Switcher
+  - type: Button
+    rect: [130, 250, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Themes"
+    click_down:
+      - type: Window
+        target: theme_switcher
+        action: ShowUi
+
+  # Settings
+  - type: Button
+    rect: [240, 250, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Settings"
+    click_down:
+      - type: Window
+        target: settings
+        action: ShowUi
+
+  # VR Controls
+  - type: Button
+    rect: [350, 250, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "VR Panel"
+    click_down:
+      - type: Window
+        target: omarchy_control
+        action: ShowUi
+
+  # Quick actions
+  - type: Label
+    rect: [20, 300, 460, 20]
+    font_size: 14
+    fg_color: "#ffffff"
+    source: Static
+    text: "Quick Actions"
+
+  # Screenshot
+  - type: Button
+    rect: [20, 330, 80, 30]
+    corner_radius: 3
+    font_size: 11
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Screenshot"
+    click_down:
+      - type: Exec
+        command: ["grim", "-g", "$(slurp)", "~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png"]
+      - type: Toast
+        message: Screenshot saved
+
+  # Lock screen
+  - type: Button
+    rect: [110, 330, 80, 30]
+    corner_radius: 3
+    font_size: 11
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Lock"
+    click_down:
+      - type: Exec
+        command: ["hyprlock"]
+
+  # Restart
+  - type: Button
+    rect: [200, 330, 80, 30]
+    corner_radius: 3
+    font_size: 11
+    fg_color: "#ffffff"
+    bg_color: "#ff8800"
+    text: "Restart"
+    click_down:
+      - type: Exec
+        command: ["systemctl", "reboot"]
+      - type: Toast
+        message: Restarting system...
+
+  # Shutdown
+  - type: Button
+    rect: [290, 330, 80, 30]
+    corner_radius: 3
+    font_size: 11
+    fg_color: "#ffffff"
+    bg_color: "#ff4444"
+    text: "Shutdown"
+    click_down:
+      - type: Exec
+        command: ["systemctl", "poweroff"]
+      - type: Toast
+        message: Shutting down...
+
+  # Close button
+  - type: Button
+    rect: [420, 20, 60, 30]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#ff4444"
+    text: "Close"
+    click_down:
+      - type: Window
+        target: vr_menu
+        action: Destroy

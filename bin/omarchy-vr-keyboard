@@ -1,0 +1,112 @@
+#!/bin/bash
+# VR Keyboard Customization Helper
+
+echo "VR Keyboard Customization Helper"
+echo "================================"
+echo ""
+
+# Check if keyboard config exists
+KEYBOARD_CONFIG="$HOME/.config/wlxoverlay/keyboard.yaml"
+
+if [[ ! -f "$KEYBOARD_CONFIG" ]]; then
+    echo "VR keyboard config not found at $KEYBOARD_CONFIG"
+    echo "Please run 'omarchy-install-vr' first to set up VR support."
+    exit 1
+fi
+
+echo "Current VR keyboard config: $KEYBOARD_CONFIG"
+echo ""
+
+echo "VR Keyboard Customization Options:"
+echo "=================================="
+echo ""
+echo "1. Edit keyboard layout manually"
+echo "2. View current configuration"
+echo "3. Reset to default template"
+echo "4. Show customization examples"
+echo "5. Open config in editor"
+echo ""
+
+read -p "Choose an option (1-5): " choice
+
+case $choice in
+    1)
+        echo ""
+        echo "Manual customization:"
+        echo "- Edit $KEYBOARD_CONFIG directly"
+        echo "- Modify key_sizes, main_layout, labels, macros, or exec_commands"
+        echo "- Restart wlx-overlay-s to apply changes"
+        echo ""
+        echo "Key sections to customize:"
+        echo "- key_sizes: Define key dimensions"
+        echo "- main_layout: Define key functions and positions"
+        echo "- labels: Customize key labels"
+        echo "- macros: Define key combinations (Ctrl+C, etc.)"
+        echo "- exec_commands: Run shell commands from keys"
+        ;;
+    2)
+        echo ""
+        echo "Current keyboard configuration:"
+        echo "=============================="
+        head -20 "$KEYBOARD_CONFIG"
+        echo "..."
+        echo "(Use option 5 to view full config)"
+        ;;
+    3)
+        echo ""
+        read -p "Reset to default template? This will overwrite your current config (y/N): " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            cp ~/.local/share/omarchy/templates/vr/keyboard.yaml "$KEYBOARD_CONFIG"
+            echo "✓ Keyboard config reset to default template"
+        else
+            echo "Reset cancelled"
+        fi
+        ;;
+    4)
+        echo ""
+        echo "Customization Examples:"
+        echo "======================"
+        echo ""
+        echo "1. Add a custom macro for Alt+F4:"
+        echo "   macros:"
+        echo "     CLOSE_WINDOW: [ \"LAlt DOWN\", \"F4\", \"LAlt UP\" ]"
+        echo ""
+        echo "2. Add exec command to launch terminal:"
+        echo "   exec_commands:"
+        echo "     TERMINAL: [ \"alacritty\" ]"
+        echo ""
+        echo "3. Customize key labels for different language:"
+        echo "   labels:"
+        echo "     \"Q\": [ \"A\" ]  # French layout"
+        echo ""
+        echo "4. Modify key sizes for better VR ergonomics:"
+        echo "   key_sizes:"
+        echo "     - [1.5,0.5, 1, 1, 1, 1,0.5,1, 1, 1, 1,0.5,1, 1, 1, 1, 0.5, 1, 1, 1, 0.5, 1, 1, 1, 1]"
+        echo ""
+        echo "For more examples, see: https://raw.githubusercontent.com/galister/wlx-overlay-s/main/src/res/keyboard.yaml"
+        ;;
+    5)
+        echo ""
+        echo "Opening keyboard config in editor..."
+        if command -v code >/dev/null 2>&1; then
+            code "$KEYBOARD_CONFIG"
+        elif command -v nvim >/dev/null 2>&1; then
+            nvim "$KEYBOARD_CONFIG"
+        elif command -v vim >/dev/null 2>&1; then
+            vim "$KEYBOARD_CONFIG"
+        else
+            nano "$KEYBOARD_CONFIG"
+        fi
+        ;;
+    *)
+        echo "Invalid option. Please choose 1-5."
+        exit 1
+        ;;
+esac
+
+echo ""
+echo "After making changes:"
+echo "1. Restart wlx-overlay-s or your VR session"
+echo "2. Test the keyboard in VR"
+echo "3. Adjust as needed"
+

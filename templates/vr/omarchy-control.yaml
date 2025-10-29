@@ -1,0 +1,283 @@
+# Omarchy VR Control Panel
+# Custom UI panel for Omarchy system management in VR
+
+size: [800, 600]
+width: 0.4
+
+elements:
+  # Background panel
+  - type: Panel
+    rect: [0, 0, 800, 600]
+    corner_radius: 8
+    bg_color: "#1a1a1a"
+
+  # Header
+  - type: Label
+    rect: [20, 20, 760, 50]
+    font_size: 24
+    fg_color: "#00ff88"
+    source: Static
+    text: "Omarchy VR Control"
+
+  # System info section
+  - type: Panel
+    rect: [20, 80, 360, 200]
+    corner_radius: 5
+    bg_color: "#2a2a2a"
+
+  - type: Label
+    rect: [30, 90, 340, 30]
+    font_size: 16
+    fg_color: "#ffffff"
+    source: Static
+    text: "System Status"
+
+  - type: Label
+    rect: [30, 120, 340, 20]
+    font_size: 12
+    fg_color: "#cccccc"
+    source: Exec
+    command: ["bash", "-c", "echo 'CPU: '$(cat /proc/loadavg | cut -d' ' -f1-3)"]
+    interval: 2
+
+  - type: Label
+    rect: [30, 140, 340, 20]
+    font_size: 12
+    fg_color: "#cccccc"
+    source: Exec
+    command: ["bash", "-c", "echo 'Memory: '$(free -h | awk '/^Mem:/ {print $3 \"/\" $2}')"]
+    interval: 5
+
+  - type: Label
+    rect: [30, 160, 340, 20]
+    font_size: 12
+    fg_color: "#cccccc"
+    source: Exec
+    command: ["bash", "-c", "echo 'Uptime: '$(uptime -p | sed 's/up //')"]
+    interval: 10
+
+  - type: Label
+    rect: [30, 180, 340, 20]
+    font_size: 12
+    fg_color: "#cccccc"
+    source: Exec
+    command: ["bash", "-c", "echo 'Theme: '$(cat ~/.config/omarchy/current/theme 2>/dev/null || echo 'Unknown')"]
+    interval: 30
+
+  # Quick actions section
+  - type: Panel
+    rect: [400, 80, 380, 200]
+    corner_radius: 5
+    bg_color: "#2a2a2a"
+
+  - type: Label
+    rect: [410, 90, 360, 30]
+    font_size: 16
+    fg_color: "#ffffff"
+    source: Static
+    text: "Quick Actions"
+
+  # Theme switcher
+  - type: Button
+    rect: [410, 120, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Next Theme"
+    click_down:
+      - type: Exec
+        command: ["bash", "-c", "omarchy-theme next"]
+      - type: Toast
+        message: Theme switched!
+
+  # System monitor
+  - type: Button
+    rect: [520, 120, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "btop"
+    click_down:
+      - type: Window
+        target: system_monitor
+        action: ShowUi
+
+  # Terminal
+  - type: Button
+    rect: [410, 165, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Terminal"
+    click_down:
+      - type: Exec
+        command: ["alacritty"]
+
+  # File manager
+  - type: Button
+    rect: [520, 165, 100, 35]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Files"
+    click_down:
+      - type: Exec
+        command: ["nautilus"]
+
+  # VR controls section
+  - type: Panel
+    rect: [20, 300, 760, 280]
+    corner_radius: 5
+    bg_color: "#2a2a2a"
+
+  - type: Label
+    rect: [30, 310, 740, 30]
+    font_size: 16
+    fg_color: "#ffffff"
+    source: Static
+    text: "VR Controls"
+
+  # Volume controls
+  - type: Label
+    rect: [30, 350, 100, 20]
+    font_size: 12
+    fg_color: "#cccccc"
+    source: Static
+    text: "Volume:"
+
+  - type: Button
+    rect: [140, 345, 40, 30]
+    corner_radius: 3
+    font_size: 14
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "-"
+    click_down:
+      - type: Exec
+        command: ["pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%"]
+      - type: Toast
+        message: Volume down
+
+  - type: Button
+    rect: [190, 345, 40, 30]
+    corner_radius: 3
+    font_size: 14
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "+"
+    click_down:
+      - type: Exec
+        command: ["pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%"]
+      - type: Toast
+        message: Volume up
+
+  - type: Button
+    rect: [240, 345, 50, 30]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Mute"
+    click_down:
+      - type: Exec
+        command: ["pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle"]
+      - type: Toast
+        message: Volume toggled
+
+  # Brightness controls
+  - type: Label
+    rect: [30, 390, 100, 20]
+    font_size: 12
+    fg_color: "#cccccc"
+    source: Static
+    text: "Brightness:"
+
+  - type: Button
+    rect: [140, 385, 40, 30]
+    corner_radius: 3
+    font_size: 14
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "-"
+    click_down:
+      - type: Exec
+        command: ["brightnessctl", "set", "5%-"]
+      - type: Toast
+        message: Brightness down
+
+  - type: Button
+    rect: [190, 385, 40, 30]
+    corner_radius: 3
+    font_size: 14
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "+"
+    click_down:
+      - type: Exec
+        command: ["brightnessctl", "set", "5%+"]
+      - type: Toast
+        message: Brightness up
+
+  # VR specific controls
+  - type: Label
+    rect: [30, 430, 100, 20]
+    font_size: 12
+    fg_color: "#cccccc"
+    source: Static
+    text: "VR Tools:"
+
+  - type: Button
+    rect: [140, 425, 80, 30]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Screenshot"
+    click_down:
+      - type: Exec
+        command: ["grim", "-g", "$(slurp)", "~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png"]
+      - type: Toast
+        message: Screenshot saved
+
+  - type: Button
+    rect: [230, 425, 80, 30]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "Record"
+    click_down:
+      - type: Exec
+        command: ["bash", "-c", "if pgrep wf-recorder >/dev/null; then pkill wf-recorder; echo 'Recording stopped'; else wf-recorder -g \"$(slurp)\" -f ~/Videos/recording-$(date +%Y%m%d-%H%M%S).mp4 & echo 'Recording started'; fi"]
+      - type: Toast
+        message: Recording toggled
+
+  - type: Button
+    rect: [320, 425, 80, 30]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#505050"
+    text: "VR Menu"
+    click_down:
+      - type: Window
+        target: vr_menu
+        action: ShowUi
+
+  # Close button
+  - type: Button
+    rect: [720, 20, 60, 30]
+    corner_radius: 3
+    font_size: 12
+    fg_color: "#ffffff"
+    bg_color: "#ff4444"
+    text: "Close"
+    click_down:
+      - type: Window
+        target: omarchy_control
+        action: Destroy
+
