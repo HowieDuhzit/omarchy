@@ -1,0 +1,81 @@
+version: 1
+
+# Rendering method
+# NVIDIA: try "dmabuf" first, use "software" if corruption
+# AMD RDNA3: use "software"
+blit_method: "software"
+
+run_compositor_at_start: false
+auto_hide: true
+auto_hide_delay: 750
+keyboard_repeat_delay: 200
+keyboard_repeat_rate: 50
+
+# Dashboard (optional)
+dashboard:
+  exec: "wayvr-dashboard"
+  args: ""
+  env: []
+
+# Display configuration
+displays:
+  watch:
+    width: 400
+    height: 600
+    scale: 1.0
+    attach_to: "HandRight"
+    pos: [0.0, 0.0, 0.125]
+    rotation: {axis: [1.0, 0.0, 0.0], angle: -45.0}
+  disp1:
+    width: 1280
+    height: 720
+    scale: 1.0
+    primary: true
+  disp2:
+    width: 1920
+    height: 1080
+    scale: 1.0
+
+# Application catalog
+catalogs:
+  default_catalog:
+    apps:
+      - name: "Terminal"
+        target_display: "disp1"
+        exec: "alacritty"
+        env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
+        shown_at_start: false
+
+      - name: "htop"
+        target_display: "watch"
+        exec: "alacritty"
+        args: "-e htop"
+        env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
+
+      - name: "Firefox"
+        target_display: "disp2"
+        exec: "firefox"
+        args: "--new-window"
+        env: ["MOZ_ENABLE_WAYLAND=1", "DISPLAY="]
+
+      - name: "File Manager"
+        target_display: "disp1"
+        exec: "thunar"
+        env: ["DISPLAY="]
+
+      - name: "Text Editor"
+        target_display: "disp1"
+        exec: "gedit"
+        env: ["DISPLAY="]
+
+      - name: "VS Code"
+        target_display: "disp2"
+        exec: "code"
+        args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
+        env: ["DISPLAY="]
+
+      - name: "Discord"
+        target_display: "disp2"
+        exec: "discord"
+        args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
+        env: ["DISPLAY="]

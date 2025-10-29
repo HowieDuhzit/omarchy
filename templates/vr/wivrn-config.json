@@ -1,0 +1,17 @@
+{
+  "application": [
+    "/usr/local/bin/wlx-overlay-s"
+  ],
+  "bitrate": 50000000,
+  "debug-gui": false,
+  "encoders.disabled": [
+    {
+      "height": 1.0,
+      "offset_x": 0.0,
+      "offset_y": 0.0,
+      "width": 1.0
+    }
+  ],
+  "openvr-compat-path": "/opt/xrizer",
+  "use-steamvr-lh": false
+}

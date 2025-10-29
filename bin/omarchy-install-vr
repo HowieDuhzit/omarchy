@@ -1,0 +1,171 @@
+#!/bin/bash
+# Install VR packages and build wlx-overlay-s
+
+# Install VR packages
+sudo pacman -S --needed --noconfirm \
+  openxr openvr wivrn-server wivrn-dashboard \
+  monado-vulkan-layers-git xrizer xrizer-common \
+  rust cargo cmake pkgconf libxkbcommon wayland \
+  vulkan-headers dbus fontconfig freetype2 cage
+
+# Install AUR packages
+yay -S --needed --noconfirm alvr-bin
+
+# Build wlx-overlay-s
+mkdir -p ~/builds
+cd ~/builds
+if [[ ! -d "wlx-overlay-s" ]]; then
+  git clone https://github.com/galister/wlx-overlay-s.git
+fi
+cd wlx-overlay-s
+cargo build --release
+sudo install -m755 target/release/wlx-overlay-s /usr/local/bin/
+
+# Create VR config directories
+mkdir -p ~/.config/wivrn ~/.config/wlxoverlay
+
+# Install WiVRn config
+cat > ~/.config/wivrn/config.json << 'EOF'
+{
+  "application": ["/usr/local/bin/wlx-overlay-s"],
+  "bitrate": 50000000,
+  "debug-gui": false,
+  "encoders.disabled": [{"height": 1.0, "offset_x": 0.0, "offset_y": 0.0, "width": 1.0}],
+  "openvr-compat-path": "/opt/xrizer",
+  "use-steamvr-lh": false
+}
+EOF
+
+# Install xrizer config
+sudo mkdir -p /opt/xrizer
+sudo tee /opt/xrizer/openvrpaths.vrpath >/dev/null << 'EOF'
+{
+  "jsonid": "vrpathreg",
+  "runtime": ["/opt/xrizer"],
+  "version": 1
+}
+EOF
+
+# Detect GPU and set rendering method
+if lspci | grep -qi nvidia; then
+  BLIT_METHOD="dmabuf"
+else
+  BLIT_METHOD="software"
+fi
+
+# Install WayVR config
+cat > ~/.config/wlxoverlay/wayvr.yaml << EOF
+version: 1
+blit_method: "$BLIT_METHOD"
+run_compositor_at_start: false
+auto_hide: true
+auto_hide_delay: 750
+keyboard_repeat_delay: 200
+keyboard_repeat_rate: 50
+
+dashboard:
+  exec: "wayvr-dashboard"
+  args: ""
+  env: []
+
+displays:
+  watch:
+    width: 400
+    height: 600
+    scale: 1.0
+    attach_to: "HandRight"
+    pos: [0.0, 0.0, 0.125]
+    rotation: {axis: [1.0, 0.0, 0.0], angle: -45.0}
+  disp1:
+    width: 1280
+    height: 720
+    scale: 1.0
+    primary: true
+  disp2:
+    width: 1920
+    height: 1080
+    scale: 1.0
+
+catalogs:
+  default_catalog:
+    apps:
+      - name: "Terminal"
+        target_display: "disp1"
+        exec: "alacritty"
+        env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
+        shown_at_start: false
+      - name: "htop"
+        target_display: "watch"
+        exec: "alacritty"
+        args: "-e htop"
+        env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
+      - name: "Firefox"
+        target_display: "disp2"
+        exec: "firefox"
+        args: "--new-window"
+        env: ["MOZ_ENABLE_WAYLAND=1", "DISPLAY="]
+      - name: "File Manager"
+        target_display: "disp1"
+        exec: "thunar"
+        env: ["DISPLAY="]
+      - name: "VS Code"
+        target_display: "disp2"
+        exec: "code"
+        args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
+        env: ["DISPLAY="]
+EOF
+
+# Set up environment variables
+if ! grep -q "WAYVR_DISPLAY" ~/.bashrc; then
+  cat >> ~/.bashrc << 'EOF'
+
+# VR environment variables
+export WAYVR_DISPLAY="wayland-20"
+alias vr-app='DISPLAY= WAYLAND_DISPLAY=$WAYVR_DISPLAY'
+EOF
+fi
+
+# Configure firewall if enabled
+if systemctl is-active --quiet ufw; then
+  sudo ufw allow mdns
+fi
+
+# VR performance optimizations
+echo "Setting up VR performance optimizations..."
+
+# Disable compositor for VR
+if [[ -f ~/.config/hypr/hyprland.conf ]]; then
+  if ! grep -q "WLR_NO_HARDWARE_CURSORS" ~/.config/hypr/hyprland.conf; then
+    echo "env = WLR_NO_HARDWARE_CURSORS,1" >> ~/.config/hypr/hyprland.conf
+  fi
+fi
+
+# Set CPU governor to performance for VR
+if command -v cpupower >/dev/null 2>&1; then
+  echo 'GOVERNOR="performance"' | sudo tee /etc/default/cpupower >/dev/null
+fi
+
+# Optimize SteamVR settings if Steam is installed
+if command -v steam >/dev/null 2>&1; then
+  STEAM_CONFIG="$HOME/.steam/steam/config"
+  if [[ -d "$STEAM_CONFIG" ]]; then
+    mkdir -p "$STEAM_CONFIG"
+    cat > "$STEAM_CONFIG/vrsettings.vrsettings" << 'EOF'
+{
+  "steamvr": {
+    "allowAsyncReprojection": true,
+    "allowInterleavedReprojection": true,
+    "background": "#000000",
+    "enableHomeApp": false,
+    "enableLinuxVulkanAsync": true,
+    "forceFadeOnBadTracking": true,
+    "mirrorViewGeometry": "0 0 1 1",
+    "renderTargetMultiplier": 1.0,
+    "supersampleScale": 1.0
+  }
+}
+EOF
+  fi
+fi
+
+echo "VR setup complete! Run 'wivrn-dashboard' to start VR."

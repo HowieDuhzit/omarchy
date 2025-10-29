@@ -1,0 +1,84 @@
+#!/bin/bash
+# Detect VR hardware and suggest appropriate software
+
+echo "=== VR Hardware Detection ==="
+echo ""
+
+# Check for Valve Index
+if lspci | grep -qi "valve\|index" || lsusb | grep -qi "valve\|index"; then
+    echo "✓ Valve Index detected"
+    echo "  Recommended: SteamVR + WiVRn"
+    echo "  Setup: Install SteamVR and use WiVRn for wireless streaming"
+    echo ""
+fi
+
+# Check for Meta/Oculus headsets
+if lsusb | grep -qi "oculus\|meta\|quest"; then
+    echo "✓ Meta/Oculus headset detected"
+    echo "  Recommended: WiVRn (primary) or ALVR (alternative)"
+    echo "  Setup: Install WiVRn client on headset, use omarchy-install-vr"
+    echo ""
+fi
+
+# Check for Windows Mixed Reality
+if lsusb | grep -qi "windows.*mixed.*reality\|wmr" || lspci | grep -qi "hololens"; then
+    echo "✓ Windows Mixed Reality headset detected"
+    echo "  Recommended: Envision + WiVRn"
+    echo "  Setup: Use Envision for controller tracking, WiVRn for streaming"
+    echo ""
+fi
+
+# Check for Pimax
+if lsusb | grep -qi "pimax" || lspci | grep -qi "pimax"; then
+    echo "✓ Pimax headset detected"
+    echo "  Recommended: Monado + SteamVR"
+    echo "  Setup: Use Monado for OpenXR, SteamVR for Steam games"
+    echo ""
+fi
+
+# Check for HTC Vive
+if lsusb | grep -qi "htc.*vive\|vive" || lspci | grep -qi "htc.*vive"; then
+    echo "✓ HTC Vive detected"
+    echo "  Recommended: SteamVR + OpenComposite"
+    echo "  Setup: SteamVR for base station tracking, OpenComposite for performance"
+    echo ""
+fi
+
+# Check for Bigscreen Beyond
+if lsusb | grep -qi "bigscreen\|beyond" || lspci | grep -qi "bigscreen"; then
+    echo "✓ Bigscreen Beyond detected"
+    echo "  Recommended: SteamVR + Lighthouse tracking"
+    echo "  Setup: Requires SteamVR base stations for tracking"
+    echo ""
+fi
+
+# Check for generic VR hardware
+if lsusb | grep -qi "vr\|virtual.*reality" || lspci | grep -qi "vr\|virtual.*reality"; then
+    echo "✓ Generic VR hardware detected"
+    echo "  Recommended: Try WiVRn first, then SteamVR if needed"
+    echo "  Setup: Start with omarchy-install-vr"
+    echo ""
+fi
+
+# Check for VR controllers/trackers
+if lsusb | grep -qi "controller.*vr\|tracker.*vr\|slimevr"; then
+    echo "✓ VR controllers/trackers detected"
+    echo "  Additional software: SlimeVR for full-body tracking"
+    echo "  Setup: Install slimevr-server for body tracking"
+    echo ""
+fi
+
+# If no VR hardware detected
+if ! (lspci | grep -qi "valve\|index\|oculus\|meta\|quest\|windows.*mixed.*reality\|wmr\|hololens\|pimax\|htc.*vive\|vive\|bigscreen\|beyond\|vr\|virtual.*reality" || \
+      lsusb | grep -qi "valve\|index\|oculus\|meta\|quest\|windows.*mixed.*reality\|wmr\|hololens\|pimax\|htc.*vive\|vive\|bigscreen\|beyond\|vr\|virtual.*reality\|controller.*vr\|tracker.*vr\|slimevr"); then
+    echo "No VR hardware detected"
+    echo "  You can still install VR software for future hardware"
+    echo "  Run: omarchy-install-vr"
+    echo ""
+fi
+
+echo "=== Next Steps ==="
+echo "1. Install VR software: omarchy-install-vr"
+echo "2. Check game compatibility: omarchy-vr-compatibility"
+echo "3. Join Linux VR community: https://lvra.gitlab.io/"
+echo "4. Check compatibility database: https://db.vronlinux.org"

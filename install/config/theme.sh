@@ -23,6 +23,12 @@ ln -snf ~/.config/omarchy/current/theme/mako.ini ~/.config/mako/config
 mkdir -p ~/.config/eza
 ln -snf ~/.config/omarchy/current/theme/eza.yml ~/.config/eza/theme.yml
 
+# VR theme configuration
+if [[ -f ~/.config/omarchy/current/theme/wayvr.yaml ]]; then
+    mkdir -p ~/.config/wlxoverlay
+    ln -snf ~/.config/omarchy/current/theme/wayvr.yaml ~/.config/wlxoverlay/wayvr.yaml
+fi
+
 # Add managed policy directories for Chromium and Brave for theme changes
 sudo mkdir -p /etc/chromium/policies/managed
 sudo chmod a+rw /etc/chromium/policies/managed

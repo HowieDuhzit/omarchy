@@ -1,0 +1,47 @@
+# VR packages for Omarchy
+# Core VR stack packages
+
+# OpenXR and OpenVR support
+openxr
+openvr
+
+# WiVRn server and dashboard
+wivrn-server
+wivrn-dashboard
+
+# Monado Vulkan layers
+monado-vulkan-layers-git
+
+# xrizer for OpenVR compatibility
+xrizer
+xrizer-common
+
+# Build dependencies for wlx-overlay-s
+rust
+cargo
+cmake
+pkgconf
+libxkbcommon
+wayland
+vulkan-headers
+dbus
+fontconfig
+freetype2
+
+# Optional VR tools
+cage
+alvr-bin
+
+# Desktop apps that work well in VR
+firefox
+thunar
+gedit
+discord
+visual-studio-code-bin
+
+# Additional VR software from LVRA
+envision
+opencomposite
+steam
+steamvr
+slimevr-server

@@ -1,0 +1,86 @@
+version: 1
+
+# catppuccin-latte VR Theme Configuration
+# Rendering method optimized for catppuccin-latte theme
+blit_method: "software"
+
+run_compositor_at_start: false
+auto_hide: true
+auto_hide_delay: 750
+keyboard_repeat_delay: 200
+keyboard_repeat_rate: 50
+
+# Dashboard with catppuccin-latte styling
+dashboard:
+  exec: "wayvr-dashboard"
+  args: ""
+  env: []
+
+# Display configuration with catppuccin-latte colors
+displays:
+  watch:
+    width: 400
+    height: 600
+    scale: 1.0
+    attach_to: "HandRight"
+    pos: [0.0, 0.0, 0.125]
+    rotation: {axis: [1.0, 0.0, 0.0], angle: -45.0}
+    # catppuccin-latte color scheme
+    background_color: "#eff1f5"
+    text_color: "#4c4f69"
+  disp1:
+    width: 1280
+    height: 720
+    scale: 1.0
+    primary: true
+    background_color: "#eff1f5"
+  disp2:
+    width: 1920
+    height: 1080
+    scale: 1.0
+    background_color: "#eff1f5"
+
+# Application catalog with catppuccin-latte themed apps
+catalogs:
+  default_catalog:
+    apps:
+      - name: "Terminal"
+        target_display: "disp1"
+        exec: "alacritty"
+        args: "--config-file ~/.config/alacritty/catppuccin-latte.toml"
+        env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
+        shown_at_start: false
+
+      - name: "htop"
+        target_display: "watch"
+        exec: "alacritty"
+        args: "-e htop"
+        env: ["WAYLAND_DISPLAY=wayland-20", "DISPLAY="]
+
+      - name: "Firefox"
+        target_display: "disp2"
+        exec: "firefox"
+        args: "--new-window"
+        env: ["MOZ_ENABLE_WAYLAND=1", "DISPLAY="]
+
+      - name: "File Manager"
+        target_display: "disp1"
+        exec: "thunar"
+        env: ["DISPLAY="]
+
+      - name: "Text Editor"
+        target_display: "disp1"
+        exec: "gedit"
+        env: ["DISPLAY="]
+
+      - name: "VS Code"
+        target_display: "disp2"
+        exec: "code"
+        args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
+        env: ["DISPLAY="]
+
+      - name: "Discord"
+        target_display: "disp2"
+        exec: "discord"
+        args: "--enable-features=UseOzonePlatform --ozone-platform=wayland"
+        env: ["DISPLAY="]
