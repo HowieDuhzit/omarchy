@@ -34,8 +34,116 @@ trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
 
 hyprctl keyword cursor:invisible true &>/dev/null
 
+# Detect which monitor this screensaver instance is running on
+# First check environment variable set by launch script
+CURRENT_MONITOR="${OMARCHY_SCREENSAVER_MONITOR:-}"
+if [[ -z "$CURRENT_MONITOR" ]]; then
+  # Fallback: Get the monitor that contains this window
+  CURRENT_MONITOR=$(hyprctl activewindow -j 2>/dev/null | jq -r '.monitor' || echo "")
+  if [[ -z "$CURRENT_MONITOR" ]] || [[ "$CURRENT_MONITOR" == "null" ]]; then
+    # Final fallback to focused monitor
+    CURRENT_MONITOR=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name' | head -1)
+  fi
+fi
+
+# Load shader configuration from current theme for random shader selection
+CURRENT_THEME_DIR="$HOME/.config/omarchy/current/theme"
+SCREENSAVER_SHADERS=()
+if [[ -f "$CURRENT_THEME_DIR/screensaver.conf" ]]; then
+  source "$CURRENT_THEME_DIR/screensaver.conf" 2>/dev/null || true
+  # Use SCREENSAVER_SHADERS array if available for random selection
+  if [[ -z "${SCREENSAVER_SHADERS[@]:-}" ]] || [[ ${#SCREENSAVER_SHADERS[@]} -eq 0 ]]; then
+    # Fallback to single shader if array is not available
+    SCREENSAVER_SHADERS=("${SCREENSAVER_SHADER:-}")
+  fi
+fi
+
+# Store per-monitor shader state files
+STATE_DIR=~/.local/state/omarchy/screensaver-shaders
+mkdir -p "$STATE_DIR"
+MONITOR_SHADER_FILE="$STATE_DIR/${CURRENT_MONITOR//\//_}.shader"
+
+# Initialize this monitor's shader if not already set
+if [[ ! -f "$MONITOR_SHADER_FILE" ]] && [[ -n "${SCREENSAVER_SHADERS[@]:-}" ]] && [[ ${#SCREENSAVER_SHADERS[@]} -gt 0 ]]; then
+  # Filter out empty strings
+  VALID_SHADERS=()
+  for shader in "${SCREENSAVER_SHADERS[@]}"; do
+    if [[ -n "$shader" ]]; then
+      VALID_SHADERS+=("$shader")
+    fi
+  done
+  if [[ ${#VALID_SHADERS[@]} -gt 0 ]]; then
+    INITIAL_SHADER="${VALID_SHADERS[RANDOM % ${#VALID_SHADERS[@]}]}"
+    echo "$INITIAL_SHADER" > "$MONITOR_SHADER_FILE"
+  fi
+fi
+
 while true; do
+  # Select a new random shader for each effect change (if shaders are configured)
+  if [[ -n "${SCREENSAVER_SHADERS[@]:-}" ]] && [[ ${#SCREENSAVER_SHADERS[@]} -gt 0 ]]; then
+    # Filter out empty strings from array
+    VALID_SHADERS=()
+    for shader in "${SCREENSAVER_SHADERS[@]}"; do
+      if [[ -n "$shader" ]]; then
+        VALID_SHADERS+=("$shader")
+      fi
+    done
+    
+    if [[ ${#VALID_SHADERS[@]} -gt 0 ]]; then
+      NEW_SHADER="${VALID_SHADERS[RANDOM % ${#VALID_SHADERS[@]}]}"
+      
+      # Find shader file path
+      SHADER_PATH=""
+      if command -v hyprshade &>/dev/null; then
+        # Try common hyprshade shader locations
+        SHADER_LOCATIONS=(
+          "$HOME/.local/share/hyprshade/shaders/${NEW_SHADER}.glsl"
+          "$HOME/.config/hyprshade/shaders/${NEW_SHADER}.glsl"
+          "$HOME/.local/share/hyprshade/${NEW_SHADER}.glsl"
+          "$HOME/.config/hyprshade/${NEW_SHADER}.glsl"
+        )
+        
+        for location in "${SHADER_LOCATIONS[@]}"; do
+          if [[ -f "$location" ]]; then
+            SHADER_PATH="$location"
+            break
+          fi
+        done
+        
+        # Apply shader for this monitor
+        # Note: decoration:screen_shader is global in Hyprland, so we coordinate
+        # by having each monitor instance apply its own shader choice
+        # The last monitor to apply will be visible, but each instance tracks its own choice
+        
+        if [[ -n "$SHADER_PATH" ]] && [[ -f "$SHADER_PATH" ]]; then
+          # Apply shader file directly using hyprctl keyword
+          # Focus monitor first to set context
+          PREV_FOCUSED=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true) | .name')
+          hyprctl dispatch focusmonitor "$CURRENT_MONITOR" 2>/dev/null || true
+          sleep 0.05
+          hyprctl keyword decoration:screen_shader "$SHADER_PATH" 2>/dev/null || true
+          # Restore focus
+          if [[ -n "$PREV_FOCUSED" ]] && [[ "$PREV_FOCUSED" != "$CURRENT_MONITOR" ]]; then
+            hyprctl dispatch focusmonitor "$PREV_FOCUSED" 2>/dev/null || true
+          fi
+        else
+          # Use hyprshade as fallback (applies globally but we track per-monitor)
+          hyprshade on "$NEW_SHADER" 2>/dev/null || true
+        fi
+        
+        # Store this monitor's shader choice for tracking
+        echo "$NEW_SHADER" > "$MONITOR_SHADER_FILE"
+      fi
+    fi
+  fi
+  
   effect=$(tte 2>&1 | grep -oP '{\K[^}]+' | tr ',' ' ' | tr ' ' '\n' | sed -n '/^beams$/,$p' | sort -u | shuf -n1)
+  
+  # Check if effect was successfully parsed
+  if [[ -z "$effect" ]]; then
+    # Fallback to a safe effect if parsing failed
+    effect="matrix"
+  fi
   
   # Use theme-specific screensaver.txt if available, otherwise fallback to global branding
   SCREENSAVER_BRANDING_FILE="$HOME/.config/omarchy/current/theme/screensaver.txt"
@@ -43,13 +151,32 @@ while true; do
     SCREENSAVER_BRANDING_FILE="$HOME/.config/omarchy/branding/screensaver.txt"
   fi
   
+  # Check if branding file exists
+  if [[ ! -f "$SCREENSAVER_BRANDING_FILE" ]]; then
+    # Exit if no branding file is available
+    exit_screensaver
+  fi
+  
+  # Launch tte with error handling
   tte -i "$SCREENSAVER_BRANDING_FILE" \
     --frame-rate 240 --canvas-width 0 --canvas-height $(($(tput lines) - 2)) --anchor-canvas c --anchor-text c \
-    "$effect" &
+    "$effect" 2>&1 &
+  TTE_PID=$!
+  
+  # Wait a moment to see if tte starts successfully
+  sleep 0.5
+  if ! kill -0 $TTE_PID 2>/dev/null && ! pgrep -x tte >/dev/null; then
+    # tte failed to start, wait for it to exit and try next effect
+    wait $TTE_PID 2>/dev/null
+    continue
+  fi
 
   while pgrep -x tte >/dev/null; do
     if read -n 1 -t 3 || ! screensaver_in_focus; then
       exit_screensaver
     fi
   done
+  
+  # Wait for tte process to fully exit
+  wait $TTE_PID 2>/dev/null
 done

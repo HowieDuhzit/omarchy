@@ -33,17 +33,23 @@ if command -v hyprshade &>/dev/null && [[ -n "$SCREENSAVER_SHADER" ]]; then
   mkdir -p ~/.local/state/omarchy
   echo "$CURRENT_SHADER" > ~/.local/state/omarchy/screensaver-previous-shader 2>/dev/null || true
   
-  # Apply screensaver shader
-  hyprshade on "$SCREENSAVER_SHADER" 2>/dev/null || true
+  # Don't apply shader here - let each monitor's instance handle its own
 fi
 
 focused=$(hyprctl monitors -j | jq -r '.[] | select(.focused == true).name')
 
+# Clear per-monitor shader state files to start fresh
+STATE_DIR=~/.local/state/omarchy/screensaver-shaders
+mkdir -p "$STATE_DIR"
+rm -f "$STATE_DIR"/*.shader 2>/dev/null || true
+
 for m in $(hyprctl monitors -j | jq -r '.[] | .name'); do
   hyprctl dispatch focusmonitor $m
 
+  # Pass monitor name as environment variable to each screensaver instance
   # FIXME: Find a way to make this generic where we it can work for kitty + ghostty
   hyprctl dispatch exec -- \
+    env OMARCHY_SCREENSAVER_MONITOR="$m" \
     alacritty --class Screensaver \
     --config-file ~/.local/share/omarchy/default/alacritty/screensaver.toml \
     -e omarchy-cmd-screensaver
