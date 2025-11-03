@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Gno.land Removal Script
+# Removes Gno CLI tools (gnokey, gnodev, gnoland)
+
+set -e
+
+echo "Removing Gno.land development environment..."
+echo ""
+
+# Check if Gno tools are installed
+if ! command -v gnokey &>/dev/null && ! command -v gnodev &>/dev/null && ! command -v gnoland &>/dev/null; then
+  echo "Gno tools are not installed."
+  exit 0
+fi
+
+# Confirm removal
+if [[ -t 0 ]]; then
+  echo "This will remove:"
+  echo "  - gnokey (Gno key management tool)"
+  echo "  - gnodev (Gno development tool)"
+  echo "  - gnoland (Gno full node)"
+  echo ""
+  echo "Note: This will remove Go binaries but NOT Go itself"
+  echo ""
+  read -p "Do you want to continue? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Removal cancelled."
+    exit 0
+  fi
+fi
+
+# Remove binaries from GOPATH/bin
+GOPATH="${GOPATH:-$HOME/go}"
+GOPATH_BIN="$GOPATH/bin"
+
+echo "Removing Gno binaries..."
+
+if [[ -f "$GOPATH_BIN/gnokey" ]]; then
+  rm -f "$GOPATH_BIN/gnokey"
+  echo "  ✓ Removed gnokey"
+fi
+
+if [[ -f "$GOPATH_BIN/gnodev" ]]; then
+  rm -f "$GOPATH_BIN/gnodev"
+  echo "  ✓ Removed gnodev"
+fi
+
+if [[ -f "$GOPATH_BIN/gnoland" ]]; then
+  rm -f "$GOPATH_BIN/gnoland"
+  echo "  ✓ Removed gnoland"
+fi
+
+# Note: We don't remove GOPATH/bin from PATH as it may be used by other Go tools
+
+echo ""
+echo "✓ Gno.land tools have been removed!"
+
+

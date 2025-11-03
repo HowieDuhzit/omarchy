@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Monero Removal Script
+# Removes Monero installation
+
+set -e
+
+echo "Removing Monero..."
+echo ""
+
+# Check if Monero is installed
+if ! command -v monerod &>/dev/null && ! command -v monero-wallet-cli &>/dev/null; then
+  echo "Monero is not installed."
+  exit 0
+fi
+
+# Confirm removal
+if [[ -t 0 ]]; then
+  echo "This will remove:"
+  echo "  - Monero packages (monerod, monero-wallet-cli)"
+  echo ""
+  echo "Note: This will NOT remove your blockchain data in ~/.bitmonero"
+  echo "      Your wallet and blockchain will remain intact"
+  echo ""
+  read -p "Do you want to continue? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Removal cancelled."
+    exit 0
+  fi
+fi
+
+# Remove Monero packages
+echo "Removing Monero packages..."
+if command -v yay &>/dev/null; then
+  yay -Rns --noconfirm monero-gui monero-cli 2>/dev/null || echo "Package removal completed or not found"
+elif command -v paru &>/dev/null; then
+  paru -Rns --noconfirm monero-gui monero-cli 2>/dev/null || echo "Package removal completed or not found"
+else
+  sudo pacman -Rns --noconfirm monero-gui monero-cli 2>/dev/null || echo "Package removal completed or not found"
+fi
+
+echo ""
+echo "✓ Monero has been removed!"
+echo ""
+echo "Note: Your blockchain data in ~/.bitmonero is still intact."
+echo "      To remove it, delete ~/.bitmonero manually if desired."
+
+

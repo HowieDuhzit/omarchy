@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# Gno.land Installation Script
+# Installs Gno development tools (gnokey, gnodev, gnoland)
+# Documentation: https://docs.gno.land/
+
+set -e
+
+echo "Installing Gno.land development environment..."
+echo "This will install: Gno CLI tools (gnokey, gnodev, gnoland)"
+echo ""
+
+# Check if Gno is already installed
+if command -v gnokey &>/dev/null || command -v gnodev &>/dev/null || command -v gnoland &>/dev/null; then
+  CURRENT_VERSION=""
+  command -v gnokey &>/dev/null && CURRENT_VERSION="$CURRENT_VERSION gnokey"
+  command -v gnodev &>/dev/null && CURRENT_VERSION="$CURRENT_VERSION gnodev"
+  command -v gnoland &>/dev/null && CURRENT_VERSION="$CURRENT_VERSION gnoland"
+  echo "Gno tools are already installed:$CURRENT_VERSION"
+  echo ""
+  if [[ -t 0 ]]; then
+    read -p "Do you want to reinstall? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Installation cancelled."
+      exit 0
+    fi
+  else
+    echo "Skipping reinstall in non-interactive mode."
+    exit 0
+  fi
+fi
+
+# Check if Go is installed (required for building Gno)
+if ! command -v go &>/dev/null; then
+  echo "Go is required to build Gno. Installing Go first..."
+  if command -v mise &>/dev/null; then
+    mise use --global go@latest
+  else
+    echo "Error: Go is not installed and mise is not available."
+    echo "Please install Go manually or install mise first."
+    exit 1
+  fi
+fi
+
+# Ensure GOPATH is set
+export GOPATH="${GOPATH:-$HOME/go}"
+export PATH="$GOPATH/bin:$PATH"
+
+# Install Gno tools from source
+echo "Installing Gno tools from source..."
+echo "This may take a few minutes..."
+
+# Install gnokey
+echo "Installing gnokey..."
+go install github.com/gnolang/gno/gno.land/cmd/gnokey@latest
+
+# Install gnodev (local development tool)
+echo "Installing gnodev..."
+go install github.com/gnolang/gno/gno.land/cmd/gnodev@latest
+
+# Install gnoland (full node)
+echo "Installing gnoland..."
+go install github.com/gnolang/gno/gno.land/cmd/gnoland@latest
+
+# Add GOPATH/bin to PATH in shell profiles
+GOPATH_BIN="$GOPATH/bin"
+if [[ ":$PATH:" != *":$GOPATH_BIN:"* ]]; then
+  echo ""
+  echo "Adding Go bin directory to PATH..."
+  for profile in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [[ -f "$profile" ]] && ! grep -q "$GOPATH_BIN" "$profile" 2>/dev/null; then
+      echo "" >> "$profile"
+      echo "# Go bin directory" >> "$profile"
+      echo "export PATH=\"\$GOPATH/bin:\$PATH\"" >> "$profile"
+    fi
+  done
+  export PATH="$GOPATH_BIN:$PATH"
+fi
+
+# Verify installation
+echo ""
+echo "Verifying installation..."
+sleep 2
+
+INSTALLED_VERSIONS=()
+
+if command -v gnokey &>/dev/null; then
+  GNOKEY_VERSION=$(gnokey version 2>/dev/null || echo "installed")
+  INSTALLED_VERSIONS+=("gnokey: $GNOKEY_VERSION")
+else
+  INSTALLED_VERSIONS+=("gnokey: not found")
+fi
+
+if command -v gnodev &>/dev/null; then
+  GNODEV_VERSION=$(gnodev --version 2>/dev/null || echo "installed")
+  INSTALLED_VERSIONS+=("gnodev: $GNODEV_VERSION")
+else
+  INSTALLED_VERSIONS+=("gnodev: not found")
+fi
+
+if command -v gnoland &>/dev/null; then
+  GNOLAND_VERSION=$(gnoland version 2>/dev/null || echo "installed")
+  INSTALLED_VERSIONS+=("gnoland: $GNOLAND_VERSION")
+else
+  INSTALLED_VERSIONS+=("gnoland: not found")
+fi
+
+echo ""
+echo "Installed Versions:"
+for version in "${INSTALLED_VERSIONS[@]}"; do
+  echo "  $version"
+done
+
+if command -v gnokey &>/dev/null || command -v gnodev &>/dev/null || command -v gnoland &>/dev/null; then
+  echo ""
+  echo "✓ Gno.land installation completed successfully!"
+  echo ""
+  echo "For new terminal sessions, restart your terminal or run:"
+  echo "  source ~/.bashrc"
+  echo ""
+  echo "Documentation: https://docs.gno.land/"
+else
+  echo ""
+  echo "⚠ Warning: Some Gno tools were not installed correctly"
+  echo "Please check the installation logs and try again."
+  exit 1
+fi
+
+

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Bitcoin Core Removal Script
+# Removes Bitcoin Core installation
+
+set -e
+
+echo "Removing Bitcoin Core..."
+echo ""
+
+# Check if Bitcoin is installed
+if ! command -v bitcoind &>/dev/null && ! command -v bitcoin-cli &>/dev/null; then
+  echo "Bitcoin Core is not installed."
+  exit 0
+fi
+
+# Confirm removal
+if [[ -t 0 ]]; then
+  echo "This will remove:"
+  echo "  - Bitcoin Core package (bitcoind, bitcoin-cli, bitcoin-qt)"
+  echo ""
+  echo "Note: This will NOT remove your blockchain data in ~/.bitcoin"
+  echo "      Your wallet and blockchain will remain intact"
+  echo ""
+  read -p "Do you want to continue? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Removal cancelled."
+    exit 0
+  fi
+fi
+
+# Remove Bitcoin Core package
+echo "Removing Bitcoin Core package..."
+if command -v yay &>/dev/null; then
+  yay -Rns --noconfirm bitcoin-core 2>/dev/null || echo "Package removal completed or not found"
+elif command -v paru &>/dev/null; then
+  paru -Rns --noconfirm bitcoin-core 2>/dev/null || echo "Package removal completed or not found"
+else
+  sudo pacman -Rns --noconfirm bitcoin-core 2>/dev/null || echo "Package removal completed or not found"
+fi
+
+echo ""
+echo "✓ Bitcoin Core has been removed!"
+echo ""
+echo "Note: Your blockchain data in ~/.bitcoin is still intact."
+echo "      To remove it, delete ~/.bitcoin manually if desired."
+
+

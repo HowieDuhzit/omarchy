@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# Solana CLI Removal Script
+# Removes Solana CLI installation and cleans up PATH entries
+# This follows the official Solana installation location
+
+set -e
+
+echo "Removing Solana development environment..."
+echo ""
+
+# Check if Solana is installed
+SOLANA_BIN_DIR="$HOME/.local/share/solana/install/active_release/bin"
+SOLANA_INSTALL_DIR="$HOME/.local/share/solana"
+
+if [[ ! -d "$SOLANA_INSTALL_DIR" ]] && ! command -v solana &>/dev/null; then
+  echo "Solana is not installed."
+  exit 0
+fi
+
+# Confirm removal
+if [[ -t 0 ]]; then
+  echo "This will remove:"
+  echo "  - Solana CLI"
+  echo "  - Solana installation directory: $SOLANA_INSTALL_DIR"
+  echo "  - PATH entries from shell profiles"
+  echo ""
+  echo "Note: Rust, Node.js, and Yarn will NOT be removed"
+  echo "      (they may be used by other tools)"
+  echo ""
+  read -p "Do you want to continue? (y/N) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Removal cancelled."
+    exit 0
+  fi
+fi
+
+# Remove PATH entries from shell profiles
+echo "Removing PATH entries from shell profiles..."
+for profile in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.zshrc" "$HOME/.profile"; do
+  if [[ -f "$profile" ]]; then
+    # Remove Solana PATH lines (handles various formats)
+    if grep -q "solana" "$profile" 2>/dev/null; then
+      # Create backup
+      cp "$profile" "${profile}.solana-backup-$(date +%Y%m%d-%H%M%S)"
+      
+      # Remove lines containing solana install/active_release/bin
+      sed -i '/solana.*install.*active_release.*bin/d' "$profile"
+      sed -i '/# Solana CLI/d' "$profile"
+      sed -i '/^export PATH.*solana/d' "$profile"
+      
+      # Remove empty lines that might have been left
+      sed -i '/^$/N;/^\n$/d' "$profile"
+      
+      echo "  ✓ Cleaned $profile"
+    fi
+  fi
+done
+
+# Remove Solana installation directory
+if [[ -d "$SOLANA_INSTALL_DIR" ]]; then
+  echo "Removing Solana installation directory..."
+  rm -rf "$SOLANA_INSTALL_DIR"
+  echo "  ✓ Removed $SOLANA_INSTALL_DIR"
+fi
+
+# Verify removal
+echo ""
+echo "Verifying removal..."
+sleep 1
+
+if command -v solana &>/dev/null; then
+  echo "⚠ Warning: 'solana' command still found in PATH"
+  echo "  You may need to restart your terminal or run:"
+  echo "  source ~/.bashrc"
+else
+  if [[ -d "$SOLANA_INSTALL_DIR" ]]; then
+    echo "⚠ Warning: Solana directory still exists: $SOLANA_INSTALL_DIR"
+    echo "  You may need to remove it manually if permission was denied"
+  else
+    echo "✓ Solana has been successfully removed!"
+    echo ""
+    echo "The following were preserved (may be used by other tools):"
+    echo "  - Rust (if installed)"
+    echo "  - Node.js (if installed)"
+    echo "  - Yarn (if installed)"
+    echo ""
+    echo "Shell profile backups were created with '.solana-backup-*' suffix"
+    echo "You can delete them if you're sure everything is working correctly."
+  fi
+fi
+
+

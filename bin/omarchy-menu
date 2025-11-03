@@ -250,11 +250,12 @@ show_install_menu() {
 }
 
 show_install_service_menu() {
-  case $(menu "Install" "  Dropbox\n  Tailscale\n󰟵  Bitwarden\n  Chromium Account") in
+  case $(menu "Install" "  Dropbox\n  Tailscale\n󰟵  Bitwarden\n  Chromium Account\n󰆊  Crypto") in
   *Dropbox*) present_terminal omarchy-install-dropbox ;;
   *Tailscale*) present_terminal omarchy-install-tailscale ;;
   *Bitwarden*) install_and_launch "Bitwarden" "bitwarden bitwarden-cli" "bitwarden" ;;
   *Chromium*) present_terminal omarchy-install-chromium-google-account ;;
+  *Crypto*) show_install_crypto_menu ;;
   *) show_install_menu ;;
   esac
 }
@@ -306,6 +307,26 @@ show_install_gaming_menu() {
   *RetroArch*) aur_install_and_launch "RetroArch" "retroarch retroarch-assets libretro libretro-fbneo" "com.libretro.RetroArch.desktop" ;;
   *Minecraft*) aur_install_and_launch "Minecraft [AUR]" "minecraft-launcher" "minecraft-launcher" ;;
   *) show_install_menu ;;
+  esac
+}
+
+show_install_crypto_menu() {
+  case $(menu "Install" "󰓹  Solana\n󰓹  Gno\n󰓹  Bitcoin\n󰓹  Monero") in
+  *Solana*) present_terminal omarchy-install-solana ;;
+  *Gno*) present_terminal omarchy-install-gno ;;
+  *Bitcoin*) present_terminal omarchy-install-bitcoin ;;
+  *Monero*) present_terminal omarchy-install-monero ;;
+  *) show_install_service_menu ;;
+  esac
+}
+
+show_remove_crypto_menu() {
+  case $(menu "Remove" "󰓹  Solana\n󰓹  Gno\n󰓹  Bitcoin\n󰓹  Monero") in
+  *Solana*) present_terminal omarchy-remove-solana ;;
+  *Gno*) present_terminal omarchy-remove-gno ;;
+  *Bitcoin*) present_terminal omarchy-remove-bitcoin ;;
+  *Monero*) present_terminal omarchy-remove-monero ;;
+  *) show_remove_menu ;;
   esac
 }
 
@@ -374,7 +395,7 @@ show_install_elixir_menu() {
 }
 
 show_remove_menu() {
-  case $(menu "Remove" "󰣇  Package\n  Web App\n  TUI\n󰸌  Theme\n󰍲  Windows\n󰈷  Fingerprint\n  Fido2") in
+  case $(menu "Remove" "󰣇  Package\n  Web App\n  TUI\n󰸌  Theme\n󰍲  Windows\n󰈷  Fingerprint\n  Fido2\n󰆊  Crypto") in
   *Package*) terminal omarchy-pkg-remove ;;
   *Web*) present_terminal omarchy-webapp-remove ;;
   *TUI*) present_terminal omarchy-tui-remove ;;
@@ -382,6 +403,7 @@ show_remove_menu() {
   *Windows*) present_terminal "omarchy-windows-vm remove" ;;
   *Fingerprint*) present_terminal "omarchy-setup-fingerprint --remove" ;;
   *Fido2*) present_terminal "omarchy-setup-fido2 --remove" ;;
+  *Crypto*) show_remove_crypto_menu ;;
   *) show_main_menu ;;
   esac
 }

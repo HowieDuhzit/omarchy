@@ -1,0 +1,183 @@
+#!/bin/bash
+
+# Solana CLI Installation Script
+# Installs Solana CLI, Anchor Framework, Rust, Node.js, and Yarn
+# Following official Solana installation documentation:
+# https://solana.com/docs/intro/installation
+
+# Don't exit on yarn errors - we'll handle them separately
+set -e
+
+echo "Installing Solana development environment..."
+echo "This will install: Rust, Solana CLI, Anchor CLI, Node.js, and Yarn"
+echo ""
+
+# Ensure Node.js is available (Solana installer needs it)
+if ! command -v node &>/dev/null; then
+  echo "Node.js not found. Installing Node.js first..."
+  if command -v mise &>/dev/null; then
+    mise use --global node@lts
+    # Source mise to get updated PATH
+    eval "$(mise activate bash)" 2>/dev/null || true
+  else
+    echo "Warning: mise not found. Solana installer will install Node.js, but it may fail."
+    echo "Consider installing mise first for better Node.js management."
+  fi
+fi
+
+# Check if Solana is already installed
+if command -v solana &>/dev/null; then
+  CURRENT_VERSION=$(solana --version 2>/dev/null || echo "unknown")
+  echo "Solana CLI is already installed: $CURRENT_VERSION"
+  echo ""
+  if [[ -t 0 ]]; then
+    # Interactive terminal - ask user
+    read -p "Do you want to reinstall? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Installation cancelled."
+      exit 0
+    fi
+  else
+    # Non-interactive - skip reinstall
+    echo "Skipping reinstall in non-interactive mode."
+    echo "To reinstall, run this script manually in a terminal."
+    exit 0
+  fi
+fi
+
+# Run the official Solana installer
+# This installs Rust, Solana CLI, Anchor CLI, Node.js, and Yarn
+echo "Running Solana installer..."
+echo "Note: If yarn installation fails, it will be installed separately..."
+
+# Temporarily disable exit on error for the installer
+set +e
+curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash
+INSTALLER_EXIT_CODE=$?
+set -e
+
+# If installer failed, check if it's just yarn
+if [[ $INSTALLER_EXIT_CODE -ne 0 ]]; then
+  echo ""
+  echo "⚠ Solana installer encountered an issue (exit code: $INSTALLER_EXIT_CODE)"
+  echo "Attempting to continue installation..."
+fi
+
+# Install yarn separately if it failed or wasn't installed
+if ! command -v yarn &>/dev/null; then
+  echo ""
+  echo "Installing Yarn separately..."
+  if command -v npm &>/dev/null; then
+    npm install -g yarn
+  elif command -v corepack &>/dev/null; then
+    corepack enable
+    corepack prepare yarn@stable --activate
+  else
+    # Install yarn via official installer
+    curl -o- -L https://yarnpkg.com/install.sh | bash
+    export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+  fi
+  
+  # Add yarn to PATH if not already there
+  if [[ ":$PATH:" != *":$HOME/.yarn/bin:"* ]]; then
+    for profile in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.zshrc" "$HOME/.profile"; do
+      if [[ -f "$profile" ]] && ! grep -q "\$HOME/.yarn/bin" "$profile" 2>/dev/null; then
+        echo "" >> "$profile"
+        echo "# Yarn" >> "$profile"
+        echo "export PATH=\"\$HOME/.yarn/bin:\$HOME/.config/yarn/global/node_modules/.bin:\$PATH\"" >> "$profile"
+      fi
+    done
+  fi
+fi
+
+# The Solana installer automatically adds PATH to shell profiles
+# But we'll verify and ensure it's set for immediate use
+SOLANA_BIN_DIR="$HOME/.local/share/solana/install/active_release/bin"
+
+# Check if Solana bin directory exists (created by installer)
+if [[ -d "$SOLANA_BIN_DIR" ]]; then
+  # Ensure it's in PATH for this session
+  if [[ ":$PATH:" != *":$SOLANA_BIN_DIR:"* ]]; then
+    export PATH="$SOLANA_BIN_DIR:$PATH"
+  fi
+  
+  # Verify it's in shell profile (installer should have done this)
+  # Check common shell profiles
+  for profile in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [[ -f "$profile" ]] && ! grep -q "$SOLANA_BIN_DIR" "$profile" 2>/dev/null; then
+      echo "" >> "$profile"
+      echo "# Solana CLI" >> "$profile"
+      echo "export PATH=\"$SOLANA_BIN_DIR:\$PATH\"" >> "$profile"
+    fi
+  done
+fi
+
+# Verify installation
+echo ""
+echo "Verifying installation..."
+sleep 2
+
+INSTALLED_VERSIONS=()
+
+if command -v rustc &>/dev/null; then
+  RUST_VERSION=$(rustc --version 2>/dev/null || echo "not found")
+  INSTALLED_VERSIONS+=("Rust: $RUST_VERSION")
+else
+  INSTALLED_VERSIONS+=("Rust: not found")
+fi
+
+if command -v solana &>/dev/null; then
+  SOLANA_VERSION=$(solana --version 2>/dev/null || echo "not found")
+  INSTALLED_VERSIONS+=("Solana CLI: $SOLANA_VERSION")
+else
+  INSTALLED_VERSIONS+=("Solana CLI: not found")
+fi
+
+if command -v anchor &>/dev/null; then
+  ANCHOR_VERSION=$(anchor --version 2>/dev/null || echo "not found")
+  INSTALLED_VERSIONS+=("Anchor CLI: $ANCHOR_VERSION")
+else
+  INSTALLED_VERSIONS+=("Anchor CLI: not found")
+fi
+
+if command -v node &>/dev/null; then
+  NODE_VERSION=$(node --version 2>/dev/null || echo "not found")
+  INSTALLED_VERSIONS+=("Node.js: $NODE_VERSION")
+else
+  INSTALLED_VERSIONS+=("Node.js: not found")
+fi
+
+if command -v yarn &>/dev/null; then
+  YARN_VERSION=$(yarn --version 2>/dev/null || echo "not found")
+  INSTALLED_VERSIONS+=("Yarn: $YARN_VERSION")
+else
+  INSTALLED_VERSIONS+=("Yarn: not found")
+fi
+
+echo ""
+echo "Installed Versions:"
+for version in "${INSTALLED_VERSIONS[@]}"; do
+  echo "  $version"
+done
+
+# Verify Solana CLI is accessible
+if command -v solana &>/dev/null; then
+  echo ""
+  echo "✓ Solana installation completed successfully!"
+  echo ""
+  echo "To use Solana in this terminal session, run:"
+  echo "  export PATH=\"$SOLANA_BIN_DIR:\$PATH\""
+  echo ""
+  echo "For new terminal sessions, restart your terminal or run:"
+  echo "  source ~/.bashrc"
+  echo ""
+  echo "You can now start developing on Solana!"
+  echo "Visit https://solana.com/docs for documentation."
+else
+  echo ""
+  echo "⚠ Warning: Solana CLI not found in PATH"
+  echo "Please restart your terminal or run:"
+  echo "  export PATH=\"$SOLANA_BIN_DIR:\$PATH\""
+  exit 1
+fi

@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Monero Installation Script
+# Installs Monero daemon and wallet CLI tools
+# Documentation: https://www.getmonero.org/
+
+set -e
+
+echo "Installing Monero..."
+echo "This will install: Monero daemon (monerod) and wallet CLI (monero-wallet-cli)"
+echo ""
+echo "Note: Monero requires significant disk space for the blockchain."
+echo "      Ensure you have at least 150GB+ free space for full node sync."
+echo ""
+
+# Check if Monero is already installed
+if command -v monerod &>/dev/null || command -v monero-wallet-cli &>/dev/null; then
+  CURRENT_VERSION=""
+  command -v monerod &>/dev/null && CURRENT_VERSION=$(monerod --version 2>/dev/null | head -1 || echo "installed")
+  echo "Monero is already installed: $CURRENT_VERSION"
+  echo ""
+  if [[ -t 0 ]]; then
+    read -p "Do you want to reinstall? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Installation cancelled."
+      exit 0
+    fi
+  else
+    echo "Skipping reinstall in non-interactive mode."
+    exit 0
+  fi
+fi
+
+# Install Monero from AUR
+echo "Installing Monero..."
+if command -v yay &>/dev/null; then
+  yay -S --noconfirm monero-gui
+elif command -v paru &>/dev/null; then
+  paru -S --noconfirm monero-gui
+else
+  echo "Error: Neither yay nor paru AUR helper is installed."
+  echo "Please install yay or paru first:"
+  echo "  sudo pacman -S --needed base-devel git"
+  echo "  git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si"
+  exit 1
+fi
+
+# Also install monero-cli (daemon only, lighter weight)
+# Note: monero-gui includes both GUI and CLI, but we'll note the CLI tools
+if command -v yay &>/dev/null; then
+  yay -S --noconfirm monero-cli 2>/dev/null || echo "monero-cli package not found, using monero-gui tools"
+elif command -v paru &>/dev/null; then
+  paru -S --noconfirm monero-cli 2>/dev/null || echo "monero-cli package not found, using monero-gui tools"
+fi
+
+# Create Monero data directory
+MONERO_DATA_DIR="$HOME/.bitmonero"
+mkdir -p "$MONERO_DATA_DIR"
+
+# Verify installation
+echo ""
+echo "Verifying installation..."
+sleep 1
+
+INSTALLED_VERSIONS=()
+
+if command -v monerod &>/dev/null; then
+  MONEROD_VERSION=$(monerod --version 2>/dev/null | head -1 || echo "installed")
+  INSTALLED_VERSIONS+=("monerod: $MONEROD_VERSION")
+else
+  INSTALLED_VERSIONS+=("monerod: not found")
+fi
+
+if command -v monero-wallet-cli &>/dev/null; then
+  INSTALLED_VERSIONS+=("monero-wallet-cli: installed")
+else
+  INSTALLED_VERSIONS+=("monero-wallet-cli: not found")
+fi
+
+echo ""
+echo "Installed Versions:"
+for version in "${INSTALLED_VERSIONS[@]}"; do
+  echo "  $version"
+done
+
+if command -v monerod &>/dev/null; then
+  echo ""
+  echo "✓ Monero installation completed successfully!"
+  echo ""
+  echo "Data directory: $MONERO_DATA_DIR"
+  echo ""
+  echo "To start Monero daemon:"
+  echo "  monerod  # Start daemon and sync blockchain"
+  echo ""
+  echo "To create a wallet:"
+  echo "  monero-wallet-cli --generate-new-wallet=mywallet"
+  echo ""
+  echo "Documentation: https://www.getmonero.org/"
+else
+  echo ""
+  echo "⚠ Warning: Monero installation may have failed"
+  echo "Please check the installation logs and try again."
+  exit 1
+fi
+
+

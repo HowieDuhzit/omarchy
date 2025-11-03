@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# Bitcoin Core Installation Script
+# Installs Bitcoin Core (bitcoind, bitcoin-cli, bitcoin-qt)
+# Documentation: https://bitcoin.org/en/bitcoin-core/
+
+set -e
+
+echo "Installing Bitcoin Core..."
+echo "This will install: Bitcoin Core daemon and CLI tools"
+echo ""
+echo "Note: Bitcoin Core requires significant disk space for the blockchain."
+echo "      Ensure you have at least 500GB+ free space for full node sync."
+echo ""
+
+# Check if Bitcoin is already installed
+if command -v bitcoind &>/dev/null || command -v bitcoin-cli &>/dev/null; then
+  CURRENT_VERSION=""
+  command -v bitcoind &>/dev/null && CURRENT_VERSION=$(bitcoind --version 2>/dev/null | head -1 || echo "installed")
+  echo "Bitcoin Core is already installed: $CURRENT_VERSION"
+  echo ""
+  if [[ -t 0 ]]; then
+    read -p "Do you want to reinstall? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "Installation cancelled."
+      exit 0
+    fi
+  else
+    echo "Skipping reinstall in non-interactive mode."
+    exit 0
+  fi
+fi
+
+# Install Bitcoin Core from AUR (bitcoin-core)
+echo "Installing Bitcoin Core..."
+if command -v yay &>/dev/null; then
+  yay -S --noconfirm bitcoin-core
+elif command -v paru &>/dev/null; then
+  paru -S --noconfirm bitcoin-core
+else
+  echo "Error: Neither yay nor paru AUR helper is installed."
+  echo "Please install yay or paru first:"
+  echo "  sudo pacman -S --needed base-devel git"
+  echo "  git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si"
+  exit 1
+fi
+
+# Create Bitcoin data directory
+BITCOIN_DATA_DIR="$HOME/.bitcoin"
+mkdir -p "$BITCOIN_DATA_DIR"
+
+# Create basic bitcoin.conf if it doesn't exist
+if [[ ! -f "$BITCOIN_DATA_DIR/bitcoin.conf" ]]; then
+  echo "Creating default bitcoin.conf..."
+  cat > "$BITCOIN_DATA_DIR/bitcoin.conf" <<'EOF'
+# Bitcoin Core Configuration
+# Documentation: https://en.bitcoin.it/wiki/Running_Bitcoin
+
+# Basic settings
+server=1
+daemon=1
+
+# RPC settings (optional, for wallet access)
+# rpcuser=yourusername
+# rpcpassword=yourpassword
+# rpcallowip=127.0.0.1
+
+# Pruning (reduces disk space requirements, optional)
+# prune=550
+
+# Network settings
+# testnet=1  # Uncomment to use testnet
+EOF
+  echo "Created default configuration at: $BITCOIN_DATA_DIR/bitcoin.conf"
+  echo ""
+  echo "⚠ Important: Review and customize $BITCOIN_DATA_DIR/bitcoin.conf before starting bitcoind"
+fi
+
+# Verify installation
+echo ""
+echo "Verifying installation..."
+sleep 1
+
+INSTALLED_VERSIONS=()
+
+if command -v bitcoind &>/dev/null; then
+  BITCOIND_VERSION=$(bitcoind --version 2>/dev/null | head -1 || echo "installed")
+  INSTALLED_VERSIONS+=("bitcoind: $BITCOIND_VERSION")
+else
+  INSTALLED_VERSIONS+=("bitcoind: not found")
+fi
+
+if command -v bitcoin-cli &>/dev/null; then
+  INSTALLED_VERSIONS+=("bitcoin-cli: installed")
+else
+  INSTALLED_VERSIONS+=("bitcoin-cli: not found")
+fi
+
+if command -v bitcoin-qt &>/dev/null; then
+  INSTALLED_VERSIONS+=("bitcoin-qt: installed")
+else
+  INSTALLED_VERSIONS+=("bitcoin-qt: not found")
+fi
+
+echo ""
+echo "Installed Versions:"
+for version in "${INSTALLED_VERSIONS[@]}"; do
+  echo "  $version"
+done
+
+if command -v bitcoind &>/dev/null; then
+  echo ""
+  echo "✓ Bitcoin Core installation completed successfully!"
+  echo ""
+  echo "Configuration file: $BITCOIN_DATA_DIR/bitcoin.conf"
+  echo ""
+  echo "To start Bitcoin Core:"
+  echo "  bitcoind  # Start daemon"
+  echo "  bitcoin-cli getblockchaininfo  # Check status"
+  echo ""
+  echo "Documentation: https://bitcoin.org/en/bitcoin-core/"
+else
+  echo ""
+  echo "⚠ Warning: Bitcoin Core installation may have failed"
+  echo "Please check the installation logs and try again."
+  exit 1
+fi
+
+
