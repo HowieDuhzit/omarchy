@@ -1,0 +1,26 @@
+{
+  "name": "mineswept",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@9.6.7",
+  "engines": {
+    "node": ">=20.x"
+  },
+  "scripts": {
+    "build": "npm run build -w server && npm run build -w client",
+    "start": "npm run start -w server",
+    "iterate": "npm run build && concurrently --kill-others \"npm run iterate -w server\" \"npm run iterate -w client\""
+  },
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "esbuild": "0.24.2",
+    "esbuild-plugin-copy": "2.1.1",
+    "rimraf": "^6.0.1",
+    "tsx": "4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

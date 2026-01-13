@@ -1,0 +1,28 @@
+{
+  "name": "mineswept-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.x"
+  },
+  "scripts": {
+    "build": "rimraf ./build && tsx ./build.ts --build",
+    "iterate": "tsx ./build.ts --watch",
+    "iterate:start": "node ./build/index.js",
+    "start": "node build/index.js"
+  },
+  "dependencies": {
+    "@mml-io/3d-web-experience-server": "^0.26.1",
+    "@mml-io/3d-web-user-networking": "^0.26.1",
+    "express": "^4.21.2",
+    "express-ws": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/express-ws": "^3.0.5",
+    "@types/node": "^22.13.1",
+    "esbuild": "0.24.2",
+    "rimraf": "^6.0.1"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://coolify.io/schema.json",
+  "name": "MINESWEPT",
+  "description": "3D Multiplayer Minesweeper - Walk on a minefield, reveal tiles, don't step on mines!",
+  "build": {
+    "type": "dockerfile",
+    "dockerfile": "Dockerfile"
+  },
+  "settings": {
+    "port": 3000,
+    "healthCheck": {
+      "enabled": true,
+      "path": "/",
+      "interval": 30,
+      "timeout": 10
+    }
+  },
+  "features": {
+    "websockets": true
+  }
+}
