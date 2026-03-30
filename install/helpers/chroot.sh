@@ -1,6 +1,9 @@
 # Starting the installer with OMARCHY_CHROOT_INSTALL=1 will put it into chroot mode
 chrootable_systemctl_enable() {
-  if [[ -n ${OMARCHY_CHROOT_INSTALL:-} ]]; then
+  if [[ -n ${OMARCHY_PROOT_INSTALL:-} ]]; then
+    echo "[PRoot] systemctl $1 skipped (systemd not available)"
+    return 0
+  elif [[ -n ${OMARCHY_CHROOT_INSTALL:-} ]]; then
     sudo systemctl enable $1
   else
     sudo systemctl enable --now $1

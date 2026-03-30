@@ -53,8 +53,12 @@ stop_log_output() {
 }
 
 start_install_log() {
-  sudo touch "$OMARCHY_INSTALL_LOG_FILE"
-  sudo chmod 666 "$OMARCHY_INSTALL_LOG_FILE"
+  if [[ -n ${OMARCHY_PROOT_INSTALL:-} ]]; then
+    touch "$OMARCHY_INSTALL_LOG_FILE"
+  else
+    sudo touch "$OMARCHY_INSTALL_LOG_FILE"
+    sudo chmod 666 "$OMARCHY_INSTALL_LOG_FILE"
+  fi
 
   export OMARCHY_START_TIME=$(date '+%Y-%m-%d %H:%M:%S')
 

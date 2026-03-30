@@ -1,14 +1,52 @@
 #!/bin/bash
 
 # Add the named packages to the system if they're missing. Returns false if it couldn't be done.
+# Supports pacman, apt, and pkg (Termux)
+
+source "$HOME/.local/share/omarchy/install/helpers/proot.sh"
+
+install_packages() {
+  case $(proot_package_manager) in
+    pacman)
+      sudo pacman -S --noconfirm --needed "$@"
+      ;;
+    apt)
+      sudo apt install -y "$@"
+      ;;
+    pkg)
+      pkg install -y "$@"
+      ;;
+    *)
+      echo -e "\033[31mError: Unknown package manager\033[0m" >&2
+      return 1
+      ;;
+  esac
+}
+
+check_installed() {
+  case $(proot_package_manager) in
+    pacman)
+      pacman -Q "$1" &>/dev/null
+      ;;
+    apt)
+      dpkg -l "$1" &>/dev/null
+      ;;
+    pkg)
+      pkg list-installed "$1" &>/dev/null
+      ;;
+    *)
+      command -v "$1" &>/dev/null
+      ;;
+  esac
+}
 
 if omarchy-pkg-missing "$@"; then
-  sudo pacman -S --noconfirm --needed "$@" || exit 1
+  install_packages "$@" || exit 1
 fi
 
 for pkg in "$@"; do
-  # Secondary check to handle states where pacman doesn't actually register an error
-  if ! pacman -Q "$pkg" &>/dev/null; then
+  # Secondary check to handle states where package manager doesn't actually register an error
+  if ! check_installed "$pkg"; then
     echo -e "\033[31mError: Package '$pkg' did not install\033[0m" >&2
     exit 1
   fi

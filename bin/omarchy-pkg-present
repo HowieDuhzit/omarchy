@@ -1,9 +1,29 @@
 #!/bin/bash
 
 # Returns true if all of the named packages are installed on the system (or false if any of them are missing).
+# Supports pacman, apt, and pkg (Termux)
+
+source "$HOME/.local/share/omarchy/install/helpers/proot.sh"
+
+check_installed() {
+  case $(proot_package_manager) in
+    pacman)
+      pacman -Q "$1" &>/dev/null
+      ;;
+    apt)
+      dpkg -l "$1" &>/dev/null
+      ;;
+    pkg)
+      pkg list-installed "$1" &>/dev/null
+      ;;
+    *)
+      command -v "$1" &>/dev/null
+      ;;
+  esac
+}
 
 for pkg in "$@"; do
-  pacman -Q "$pkg" &>/dev/null || exit 1
+  check_installed "$pkg" || exit 1
 done
 
 exit 0

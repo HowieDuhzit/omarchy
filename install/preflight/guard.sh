@@ -4,6 +4,29 @@ abort() {
   gum confirm "Proceed anyway on your own accord and without assistance?" || exit 1
 }
 
+abort_proot() {
+  echo -e "\e[33mOmarchy install (PRoot mode) warning: $1\e[0m"
+}
+
+source $OMARCHY_INSTALL/helpers/proot.sh
+
+if is_proot || is_termux; then
+  echo -e "\e[36mRunning in PRoot/Termux mode - using relaxed guards\e[0m"
+  echo
+
+  if [[ ! -f /etc/arch-release ]] && ! is_termux; then
+    abort_proot "Non-Arch distro (some packages may not be available)"
+  fi
+
+  if (( EUID == 0 )); then
+    echo -e "\e[33mRunning as root in PRoot - some features may be limited\e[0m"
+  fi
+
+  echo "PRoot Guards: OK"
+  echo
+  exit 0
+fi
+
 # Must be an Arch distro
 if [[ ! -f /etc/arch-release ]]; then
   abort "Vanilla Arch"
