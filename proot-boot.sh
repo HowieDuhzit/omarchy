@@ -104,12 +104,10 @@ if [[ -d ~/.local/share/omarchy ]]; then
   git fetch origin "${OMARCHY_REF}" && git checkout "${OMARCHY_REF}"
   cd -
 else
-  OMARCHY_REPO="${OMARCHY_REPO:-basecamp/omarchy}"
+  OMARCHY_REPO="${OMARCHY_REPO:-HowieDuhzit/omarchy}"
   echo -e "Cloning Omarchy from: https://github.com/${OMARCHY_REPO}.git"
-  git clone "https://github.com/${OMARCHY_REPO}.git" ~/.local/share/omarchy >/dev/null 2>&1
-  cd ~/.local/share/omarchy
-  git fetch origin "${OMARCHY_REF}" && git checkout "${OMARCHY_REF}"
-  cd -
+  echo -e "Using branch: \e[32m$OMARCHY_REF\e[0m"
+  git clone --branch "${OMARCHY_REF}" "https://github.com/${OMARCHY_REPO}.git" ~/.local/share/omarchy >/dev/null 2>&1
 fi
 
 if ! command -v gum &>/dev/null; then
